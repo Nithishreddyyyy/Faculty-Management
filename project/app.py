@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask,render_template,request,redirect
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -84,6 +84,39 @@ class SubjectTaught(db.Model):
     FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
     AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
     Semester = db.Column(db.Integer, primary_key=True)
+
+@app.route('/')
+def index():
+    faculty_count = Faculty.query.count()
+    activity_count = Activity.query.count()
+    subject_count = Subject.query.count()
+    current_year = datetime.now().year
+
+    recent_activities = db.session.query(
+        Activity.Title,
+        Activity.Date,
+        ActivityType.Category.label('activity_type'),
+        Faculty.FirstName,
+        Faculty.LastName
+    ).join(ActivityType, Activity.ActivityTypeID == ActivityType.ID)\
+     .join(Faculty, Activity.FacultyID == Faculty.ID)\
+     .order_by(Activity.Date.desc()).limit(5).all()
+
+    faculty_list = Faculty.query.limit(10).all()
+
+    return render_template('index.html',
+        faculty_count=faculty_count,
+        activity_count=activity_count,
+        subject_count=subject_count,
+        current_year=current_year,
+        recent_activities=[{
+            'Title': a.Title,
+            'Date': a.Date,
+            'activity_type': a.activity_type,
+            'faculty_name': f"{a.FirstName} {a.LastName}"
+        } for a in recent_activities],
+        faculty_list=faculty_list
+    )
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)

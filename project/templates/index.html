@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Management System</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        .card-dashboard {
+            transition: transform 0.3s ease;
+        }
+        .card-dashboard:hover {
+            transform: translateY(-5px);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">Faculty Management System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-people"></i> Faculty</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-calendar-event"></i> Activities</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-book"></i> Subjects</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-award"></i> Appraisals</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container py-4">
+        <!-- Dashboard Stats -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+            </div>
+        </div>
+        
+        <div class="row mb-4 g-3">
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-dashboard shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <div class="text-primary mb-2">
+                            <i class="bi bi-people fs-1"></i>
+                        </div>
+                        <h5 class="card-title text-secondary">Faculty Members</h5>
+                        <p class="stat-number text-primary">{{ faculty_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-dashboard shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <div class="text-success mb-2">
+                            <i class="bi bi-calendar-event fs-1"></i>
+                        </div>
+                        <h5 class="card-title text-secondary">Activities</h5>
+                        <p class="stat-number text-success">{{ activity_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-dashboard shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <div class="text-info mb-2">
+                            <i class="bi bi-book fs-1"></i>
+                        </div>
+                        <h5 class="card-title text-secondary">Subjects</h5>
+                        <p class="stat-number text-info">{{ subject_count }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="card card-dashboard shadow-sm border-0">
+                    <div class="card-body text-center">
+                        <div class="text-warning mb-2">
+                            <i class="bi bi-calendar3 fs-1"></i>
+                        </div>
+                        <h5 class="card-title text-secondary">Current Year</h5>
+                        <p class="stat-number text-warning">{{ current_year }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activities Section -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Recent Activities</h5>
+                <a href="#" class="btn btn-primary btn-sm">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Activity Name</th>
+                                <th>Faculty</th>
+                                <th>Type</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in recent_activities %}
+                            <tr>
+                                <td>{{ activity.Title }}</td>
+                                <td>{{ activity.faculty_name }}</td>
+                                <td><span class="badge bg-info">{{ activity.activity_type }}</span></td>
+                                <td>{{ activity.Date.strftime('%d-%m-%Y') }}</td>
+                                <td>
+                                    <button class="btn btn-outline-primary btn-sm me-1"><i class="bi bi-eye"></i></button>
+                                    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty List Section -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Faculty Members</h5>
+                <button class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add New</button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Designation</th>
+                                <th>Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for faculty in faculty_list %}
+                            <tr>
+                                <td>{{ faculty.FirstName }} {{ faculty.LastName }}</td>
+                                <td>{{ faculty.Department }}</td>
+                                <td>{{ faculty.Designation }}</td>
+                                <td>{{ faculty.Email }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-primary"><i class="bi bi-person"></i></button>
+                                        <button type="button" class="btn btn-outline-info"><i class="bi bi-calendar-event"></i></button>
+                                        <button type="button" class="btn btn-outline-success"><i class="bi bi-award"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center py-4 mt-5">
+        <div class="container">
+            <p class="mb-0">&copy; {{ current_year }} Faculty Management System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
