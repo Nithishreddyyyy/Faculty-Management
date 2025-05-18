@@ -21,7 +21,13 @@ class Faculty(db.Model):
     Phone1 = db.Column(db.String(15), unique=True)
     Department = db.Column(db.String(100), nullable=False)
     Designation = db.Column(db.String(100), nullable=False)
-    JoinDate = db.Column(db.Date)
+    JoinDate = db.Column(db.Date)    # 'subjects_taught' will be a list of Subject objects.
+    subjects_taught = db.relationship(
+        'Subject',
+        back_populates='assigned_faculty',
+        foreign_keys='Subject.FacultyID',
+        lazy='dynamic' 
+    )
 
 # 2. AcademicYear
 class AcademicYear(db.Model):
@@ -30,14 +36,21 @@ class AcademicYear(db.Model):
     YearStart = db.Column(db.Integer, nullable=False)
     YearEnd = db.Column(db.Integer, nullable=False)
 
-# 3. ActivityType
+    subjects_in_year = db.relationship(
+        'Subject',
+        back_populates='academic_year_info',
+        foreign_keys='Subject.AcademicYearID', # Explicitly name the FK column in the Subject model
+        lazy='dynamic'
+    )
+
+# 3. ActivityType 
 class ActivityType(db.Model):
     __tablename__ = 'ActivityType'
     ID = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String(100), nullable=False, unique=True)
     Category = db.Column(db.String(100), nullable=False)
 
-# 4. Activity
+# 4. Activity 
 class Activity(db.Model):
     __tablename__ = 'Activity'
     ID = db.Column(db.Integer, primary_key=True)
@@ -49,41 +62,30 @@ class Activity(db.Model):
     FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     ActivityTypeID = db.Column(db.Integer, db.ForeignKey('ActivityType.ID', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
 
-# 5. PersonalDetails
-class PersonalDetails(db.Model):
-    __tablename__ = 'PersonalDetails'
-    FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    ActivityID = db.Column(db.Integer, db.ForeignKey('Activity.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-
-# 6. ProfessionalDetails
-class ProfessionalDetails(db.Model):
-    __tablename__ = 'ProfessionalDetails'
-    FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    ActivityID = db.Column(db.Integer, db.ForeignKey('Activity.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-
-# 7. Appraisal
-class Appraisal(db.Model):
-    __tablename__ = 'Appraisal'
-    FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    Summary = db.Column(db.Text, nullable=False)
-
-# 8. Subject
+# 8. Subject (UPDATED)
 class Subject(db.Model):
     __tablename__ = 'Subject'
     CourseCode = db.Column(db.String(10), primary_key=True)
     SubjectName = db.Column(db.String(100), nullable=False)
+    
     FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='SET NULL', onupdate='CASCADE'))
     AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='SET NULL', onupdate='CASCADE'))
 
-# 9. SubjectTaught
-class SubjectTaught(db.Model):
-    __tablename__ = 'SubjectTaught'
-    FacultyID = db.Column(db.Integer, db.ForeignKey('Faculty.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    AcademicYearID = db.Column(db.Integer, db.ForeignKey('AcademicYear.ID', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    Semester = db.Column(db.Integer, primary_key=True)
+
+    assigned_faculty = db.relationship(
+        'Faculty',
+        back_populates='subjects_taught',
+        foreign_keys=[FacultyID] 
+    )
+
+    academic_year_info = db.relationship(
+        'AcademicYear',
+        back_populates='subjects_in_year',
+        foreign_keys=[AcademicYearID]
+    )
+
+
+# -- Application Routes --
 
 @app.route('/')
 def index():
@@ -92,15 +94,17 @@ def index():
     subject_count = Subject.query.count()
     current_year = datetime.now().year
 
-    recent_activities = db.session.query(
+    recent_activities_query = db.session.query(
         Activity.Title,
         Activity.Date,
-        ActivityType.Category.label('activity_type'),
-        Faculty.FirstName,
+        ActivityType.Category.label('activity_type'), 
+        Faculty.FirstName,                          
         Faculty.LastName
     ).join(ActivityType, Activity.ActivityTypeID == ActivityType.ID)\
      .join(Faculty, Activity.FacultyID == Faculty.ID)\
-     .order_by(Activity.Date.desc()).limit(5).all()
+     .order_by(Activity.Date.desc()).limit(5)
+    recent_activities_result = recent_activities_query.all()
+
 
     faculty_list = Faculty.query.limit(10).all()
 
@@ -109,12 +113,12 @@ def index():
         activity_count=activity_count,
         subject_count=subject_count,
         current_year=current_year,
-        recent_activities=[{
+        recent_activities=[{ 
             'Title': a.Title,
             'Date': a.Date,
             'activity_type': a.activity_type,
             'faculty_name': f"{a.FirstName} {a.LastName}"
-        } for a in recent_activities],
+        } for a in recent_activities_result],
         faculty_list=faculty_list
     )
 
@@ -131,7 +135,7 @@ def add_faculty():
     dob = request.form.get('dob')
     email = request.form.get('email')
     phone = request.form.get('phone')
-    phone1 = request.form.get('phone1')
+    phone1 = request.form.get('phone1') 
     department = request.form.get('department')
     designation = request.form.get('designation')
     join_date = request.form.get('join_date')
@@ -150,7 +154,51 @@ def add_faculty():
 
     db.session.add(new_faculty)
     db.session.commit()
-    return redirect(request.referrer)
+    return redirect(request.referrer or url_for('faculty'))
+
+
+@app.route('/subjects')
+def subjects_view():
+    subject_list = db.session.query(Subject).options(
+        db.joinedload(Subject.assigned_faculty), 
+        db.joinedload(Subject.academic_year_info)
+    ).order_by(Subject.CourseCode).all()
+    
+    faculties = Faculty.query.order_by(Faculty.FirstName).all()
+    academic_years = AcademicYear.query.order_by(AcademicYear.YearStart.desc()).all()
+    current_year = datetime.now().year
+    
+    return render_template('subjects.html', 
+                           subject_list=subject_list, 
+                           faculties=faculties,
+                           academic_years=academic_years,
+                           current_year=current_year)
+
+@app.route('/add_subject', methods=['POST'])
+def add_subject():
+    course_code = request.form.get('course_code')
+    subject_name = request.form.get('subject_name')
+    faculty_id = request.form.get('faculty_id')
+    academic_year_id = request.form.get('academic_year_id')
+
+    if not course_code or not subject_name:
+        return redirect(request.referrer or url_for('subjects_view'))
+
+    new_subject = Subject(
+        CourseCode=course_code,
+        SubjectName=subject_name,
+        FacultyID=int(faculty_id) if faculty_id and faculty_id.isdigit() else None,
+        AcademicYearID=int(academic_year_id) if academic_year_id and academic_year_id.isdigit() else None
+    )
+    
+    try:
+        db.session.add(new_subject)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding subject: {e}") 
+    
+    return redirect(url_for('subjects_view'))
 
 
 if __name__ == '__main__':
