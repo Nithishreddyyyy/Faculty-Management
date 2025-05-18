@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,redirect
+from flask import Flask,render_template,request,redirect,url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -118,6 +118,39 @@ def index():
         faculty_list=faculty_list
     )
 
+@app.route('/faculty')
+def faculty():
+    faculty_list = Faculty.query.order_by(Faculty.ID).all()
+    current_year = datetime.now().year
+    return render_template('faculty.html', faculty_list=faculty_list, current_year=current_year)
+
+@app.route('/add_faculty', methods=['POST'])
+def add_faculty():
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    dob = request.form.get('dob')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    phone1 = request.form.get('phone1')
+    department = request.form.get('department')
+    designation = request.form.get('designation')
+    join_date = request.form.get('join_date')
+
+    new_faculty = Faculty(
+        FirstName=first_name,
+        LastName=last_name,
+        DOB=datetime.strptime(dob, '%Y-%m-%d'),
+        Email=email,
+        Phone=phone,
+        Phone1=phone1,
+        Department=department,
+        Designation=designation,
+        JoinDate=datetime.strptime(join_date, '%Y-%m-%d') if join_date else None
+    )
+
+    db.session.add(new_faculty)
+    db.session.commit()
+    return redirect(request.referrer)
 
 
 if __name__ == '__main__':
