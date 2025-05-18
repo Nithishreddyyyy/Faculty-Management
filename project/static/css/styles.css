@@ -1,0 +1,87 @@
+/* Custom styles to supplement Bootstrap */
+
+/* Dashboard card animations */
+.card-dashboard {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-dashboard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Stats number styling */
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Improve table row hover effect */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Custom scrollbar for tables */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Add some subtle animations to buttons */
+.btn {
+    transition: all 0.2s ease;
+}
+
+/* Custom color for the light background */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+/* Custom navbar active link styling */
+.navbar-dark .navbar-nav .nav-link.active {
+    font-weight: 600;
+    color: white;
+}
+
+/* Improved card styling */
+.card {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Bootstrap utility classes that might be useful */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Better visibility for badges */
+.badge {
+    padding: 0.5em 0.75em;
+    font-weight: 500;
+}
+
+/* Custom footer styling */
+footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
