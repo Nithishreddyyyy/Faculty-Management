@@ -86,7 +86,7 @@ class Subject(db.Model):
 
 
 # -- Application Routes --
-
+# -- Start of Admin View --
 @app.route('/')
 def index():
     faculty_count = Faculty.query.count()
@@ -201,5 +201,26 @@ def add_subject():
     return redirect(url_for('subjects_view'))
 
 
+@app.route('/appraisals')
+def appraisals():
+    appraisal_list = [] 
+    
+    # Fetch data needed for the "Add Appraisal" modal dropdowns
+    faculties = Faculty.query.order_by(Faculty.FirstName, Faculty.LastName).all()
+    academic_years = AcademicYear.query.order_by(AcademicYear.YearStart.desc()).all()
+    current_year = datetime.now().year
+    
+    return render_template('appraisals.html', 
+                           appraisal_list=appraisal_list,
+                           faculties=faculties,
+                           academic_years=academic_years,
+                           current_year=current_year)
+# -- End of Admin View --
+
+# -- Start of Faculty View --
+
+
+
+# -- End of Faculty View --
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
