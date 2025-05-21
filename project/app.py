@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 
 app = Flask(__name__)
+app.secret_key="Ramaiah Institute of Technology"
 basedir = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:test1234@localhost/iseTestDB'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -283,28 +284,31 @@ def activity():
 @app.route('/add_activity', methods=['POST'])
 def add_activity():
     new_activity = Activity(
-        Name=request.form['Name'],
-        Title=request.form['Title'],
-        Date=request.form['Date'],
-        Description=request.form['Description'],
-        AcademicYearID=request.form['AcademicYearID'],
-        ActivityTypeID=request.form['ActivityTypeID'],
+        Name=request.form['activity_name'],
+        Title=request.form['title'],               
+        Date=request.form['date'],                  
+        Description=request.form.get('description'), 
+        AcademicYearID=request.form['academic_year'],
+        ActivityTypeID=request.form['activity_type'], 
         FacultyID=1  # Replace with session or actual ID
     )
     db.session.add(new_activity)
     db.session.commit()
+    flash('Activity added successfully!', 'success') # Optional: Add a flash message
     return redirect(url_for('activity'))
 
 @app.route('/edit_activity/<int:id>', methods=['POST'])
 def edit_activity(id):
     activity = Activity.query.get_or_404(id)
-    activity.Name = request.form['Name']
-    activity.Title = request.form['Title']
-    activity.Date = request.form['Date']
-    activity.Description = request.form['Description']
-    activity.AcademicYearID = request.form['AcademicYearID']
-    activity.ActivityTypeID = request.form['ActivityTypeID']
+    # Match the 'name' attributes from your HTML forms
+    activity.Name = request.form['activity_name']
+    activity.Title = request.form['title']
+    activity.Date = request.form['date']
+    activity.Description = request.form.get('description') # Use .get() as it's optional
+    activity.AcademicYearID = request.form['academic_year']
+    activity.ActivityTypeID = request.form['activity_type']
     db.session.commit()
+    flash('Activity updated successfully!', 'success') # Optional: Add a flash message
     return redirect(url_for('activity'))
 
 
