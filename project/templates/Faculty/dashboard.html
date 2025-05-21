@@ -1,82 +1,174 @@
-{% extends './Faculty/base.html' %}
+{% extends "Faculty/base.html" %}
 
 {% block title %}Dashboard | FacultyHub{% endblock %}
 
 {% block content %}
+<div class="container py-4">
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-primary text-white shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center">
+                        <div class="rounded-circle bg-white p-3 me-md-4 mb-3 mb-md-0 align-self-start align-self-md-center">
+                            <i class="bi bi-person-circle text-primary" style="font-size: 2.5rem;"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h2 class="card-title fw-bold mb-1">Welcome, {{ faculty.FirstName }}!</h2>
+                            <p class="card-text mb-0">{{ faculty.Designation }} | {{ faculty.Department }}</p>
+                            <div class="d-flex gap-3 mt-2 flex-wrap">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-envelope me-2"></i>
+                                    <span>{{ faculty.Email }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-telephone me-2"></i>
+                                    <span>{{ faculty.Phone }}</span>
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar-check me-2"></i>
+                                    <span>Joined: {{ faculty.JoinDate.strftime('%d %b, %Y') if faculty.JoinDate else 'Not specified' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<!-- Hero Banner -->
-<div class="bg-primary text-white rounded p-5 mb-4 text-center d-flex flex-column justify-content-center" style="height: 200px;">
-    <h1 class="display-5 fw-bold">Welcome, {{ faculty.FirstName }}!</h1>
-    <p class="lead mb-0">Here's your Faculty dashboard.</p>
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center hover-shadow">
+                <div class="card-body p-4">
+                    <div class="bg-light-subtle rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-journal-text text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fw-bold text-primary">{{ subject_count }}</h3>
+                    <p class="text-muted">Subjects Taught</p>
+                    <a href="{{ url_for('subjects') }}" class="btn btn-sm btn-outline-primary rounded-pill mt-2">View Subjects</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center hover-shadow">
+                <div class="card-body p-4">
+                    <div class="bg-light-subtle rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-list-check text-success" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fw-bold text-success">{{ activities_count }}</h3>
+                    <p class="text-muted">Activities Completed</p>
+                    <a href="{{ url_for('activity') }}" class="btn btn-sm btn-outline-success rounded-pill mt-2">View Activities</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center hover-shadow">
+                <div class="card-body p-4">
+                    <div class="bg-light-subtle rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-vcard text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="fw-bold text-warning">Profile</h3>
+                    <p class="text-muted">Manage Your Information</p>
+                    <a href="{{ url_for('profile') }}" class="btn btn-sm btn-outline-warning rounded-pill mt-2">Update Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Faculty Performance Overview -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 pb-0">
+                    <h4 class="fw-bold"><i class="bi bi-graph-up text-info me-2"></i>Performance Overview</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row">
+                        <!-- Activity Distribution from Database -->
+                        <div class="col-12">
+                            <div class="card border h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Activity Distribution</h5>
+                                    <div class="progress mb-3" style="height: 30px;">
+                                        {% for type in activity_distribution %}
+                                            <div class="progress-bar {{ type.color }}" 
+                                                role="progressbar" 
+                                                style="width: {{ type.percentage }}%;" 
+                                                aria-valuenow="{{ type.percentage }}" 
+                                                aria-valuemin="0" 
+                                                aria-valuemax="100">
+                                                {{ type.name }} ({{ type.percentage }}%)
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="d-flex flex-wrap justify-content-between gap-2 mt-3">
+                                        {% for type in activity_types %}
+                                            <span class="badge {{ type.color }} p-2">{{ type.name }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activities -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                    <h4 class="fw-bold mb-0"><i class="bi bi-calendar-event text-danger me-2"></i>Activities</h4>
+                    <a href="{{ url_for('activity') }}" class="btn btn-sm btn-outline-primary">Add New</a>
+                </div>
+                <div class="card-body p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in activities %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-earmark-text text-primary me-2"></i>
+                                            <div>{{ activity.Title }}</div>
+                                        </div>
+                                    </td>
+                                    <td><span class="badge {{ activity.color }}">{{ activity.Type }}</span></td>
+                                    <td>{{ activity.Date.strftime('%b %d, %Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Stats Section -->
-<h4 class="mb-3">Your Stats</h4>
-<div class="row g-3 mb-4">
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title fw-bold">{{ faculty.Designation }}. {{ faculty.FirstName }} {{ faculty.LastName }}</h5>
-                <p class="mb-1 text-muted">{{ faculty.Designation }}, {{ faculty.Department }}</p>
-                <p class="mb-1"><strong>Email:</strong> {{ faculty.Email }}</p>
-                <p><strong>Joined:</strong> {{ faculty.JoinDate }}</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-start">
-                <h6 class="text-muted">Subjects Taught</h6>
-                <h2 class="fw-bold">{{ subject_count }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-start">
-                <h6 class="text-muted">Activities Logged</h6>
-                <h2 class="fw-bold">{{ activities_count }}</h2>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<h4 class="mb-3">Quick Actions</h4>
-<div class="row g-3">
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">
-                    <i class="bi bi-person-fill me-2"></i> Profile
-                </h5>
-                <p class="text-muted flex-grow-1">View and update your personal and professional details.</p>
-                <a href="./profile" class="btn btn-outline-primary w-100 mt-auto">Manage Profile</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">
-                    <i class="bi bi-journal-text me-2"></i> Subjects
-                </h5>
-                <p class="text-muted flex-grow-1">Manage your assigned subjects and view details.</p>
-                <a href="./subject" class="btn btn-outline-primary w-100 mt-auto">Manage Subjects</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
-                <h5 class="card-title">
-                    <i class="bi bi-list-check me-2"></i> Activities
-                </h5>
-                <p class="text-muted flex-grow-1">Log and track your academic and professional activities.</p>
-                <a href="./activity" class="btn btn-outline-primary w-100 mt-auto">Manage Activities</a>
-            </div>
-        </div>
-    </div>
-</div>
-
+<!-- Custom CSS -->
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    
+    .bg-light-subtle {
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+</style>
 {% endblock %}

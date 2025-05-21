@@ -3,67 +3,76 @@
 {% block title %}Your Profile | FacultyHub{% endblock %}
 
 {% block content %}
+<div class="container py-4">
+    <h2 class="fw-bold mb-4"><i class="bi bi-person-circle text-primary me-2"></i>Your Profile</h2>
 
-<h2 class="fw-bold mb-4">Your Profile</h2>
+    <div class="card shadow-sm border-0 rounded-4 mb-5">
+        <div class="card-body p-4">
+            <h4 class="card-title fw-semibold mb-3">
+                <i class="bi bi-person-lines-fill text-primary me-2"></i>Edit Your Information
+            </h4>
+            <p class="text-muted mb-4">Keep your personal and professional details up to date.</p>
 
-<div class="card shadow-sm mb-5">
-    <div class="card-body">
-        <h4 class="card-title fw-semibold mb-3">
-            <i class="bi bi-person-lines-fill text-primary me-2"></i> Edit Your Information
-        </h4>
-        <p class="text-muted mb-4">Keep your personal and professional details up to date.</p>
+            <form method="post">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.FirstName }}" name="first_name">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.LastName }}" name="last_name">
+                    </div>
 
-        <form method="post">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">First Name</label>
-                    <input type="text" class="form-control" value="{{ faculty.FirstName }}" name="first_name">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Last Name</label>
-                    <input type="text" class="form-control" value="{{ faculty.LastName }}" name="last_name">
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-calendar3 me-1"></i> Date of Birth</label>
+                        <input type="date" class="form-control rounded-3" value="{{ faculty.DOB }}" name="dob">
+                        <small class="text-muted">MM-DD-YYYY</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-envelope me-1"></i> Email</label>
+                        <input type="email" class="form-control rounded-3" value="{{ faculty.Email }}" name="email">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-telephone me-1"></i> Phone</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.Phone }}" name="phone">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-telephone-outbound me-1"></i> Alternate Phone</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.Phone1 }}" name="alt_phone">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-building me-1"></i> Department</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.Department}}" name="department">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-person-badge me-1"></i> Designation</label>
+                        <input type="text" class="form-control rounded-3" value="{{ faculty.Designation }}" name="designation">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label"><i class="bi bi-calendar-check me-1"></i> Join Date</label>
+                        <input type="date" class="form-control rounded-3" value="{{ faculty.JoinDate }}" name="join_date">
+                        <small class="text-muted">MM-DD-YYYY</small>
+                    </div>
                 </div>
 
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-calendar3 me-1"></i> Date of Birth</label>
-                    <input type="date" class="form-control" value="{{ faculty.DOB }}" name="dob">
-                    <small class="text-muted">MM-DD-YYYY</small>
+                <div class="mt-4 text-end">
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm hover-shadow">Save Changes</button>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-envelope me-1"></i> Email</label>
-                    <input type="email" class="form-control" value="{{ faculty.Email }}" name="email">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-telephone me-1"></i> Phone</label>
-                    <input type="text" class="form-control" value="{{ faculty.Phone }}" name="phone">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-telephone-outbound me-1"></i> Alternate Phone</label>
-                    <input type="text" class="form-control" value="{{ faculty.Phone1 }}" name="alt_phone">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-building me-1"></i> Department</label>
-                    <input type="text" class="form-control" value="{{ faculty.Department}}" name="department">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-person-badge me-1"></i> Designation</label>
-                    <input type="text" class="form-control" value="{{ faculty.Designation }}" name="designation">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label"><i class="bi bi-calendar-check me-1"></i> Join Date</label>
-                    <input type="date" class="form-control" value="{{ faculty.JoinDate }}" name="join_date">
-                    <small class="text-muted">MM-DD-YYYY</small>
-                </div>
-            </div>
-
-            <div class="mt-4 text-end">
-                <button type="submit" class="btn btn-primary px-4">Save Changes</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 
+<!-- Custom CSS -->
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-3px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
 {% endblock %}

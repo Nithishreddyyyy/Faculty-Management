@@ -1,32 +1,102 @@
-<!-- subjects.html -->
 {% extends './Faculty/base.html' %}
-{% block content %}
-<div class="container mt-5">
-    <h2 class="mb-4"><i class="bi bi-journal-bookmark"></i> Your Subjects</h2>
 
-    <div class="mb-3">
-        <label for="academicYear" class="form-label">Filter by Academic Year:</label>
-        <select id="academicYear" class="form-select" aria-label="Filter by Academic Year">
-            <option selected>All Years</option>
-            <option value="2024-2025">2024-2025</option>
-            <option value="2023-2024">2023-2024</option>
-            <!-- Add more years dynamically if needed -->
-        </select>
+{% block title %}Your Subjects | FacultyHub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Page Heading -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0"><i class="bi bi-journal-bookmark-fill text-primary me-2"></i>Your Subjects</h2>
     </div>
 
+    <!-- Filter Dropdown -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <label for="academicYear" class="form-label fw-semibold"><i class="bi bi-calendar-range me-1"></i>Filter by Academic Year:</label>
+            <select id="academicYear" class="form-select">
+                <option value="all" selected>All Years</option>
+                <option value="2024-2025">2024-2025</option>
+                <option value="2023-2024">2023-2024</option>
+                <!-- Dynamically add more years as needed -->
+            </select>
+        </div>
+    </div>
+
+    <!-- Subjects List -->
+    <div class="row g-4" id="subjectsContainer">
         {% for subject, year in subjects %}
-         <div class="col-md-10 mb-4">
-            <div class="card shadow-sm">
+        <div class="col-md-6 subject-card" data-year="{{ year.YearStart }}-{{ year.YearEnd }}">
+            <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-journal-code"></i> {{ subject.SubjectName }}<span class="badge bg-light text-dark float-end">{{ subjects.CourseCode }}</span></h5>
-                    <p class="card-subtitle text-muted">Academic Year:  {{ year.YearStart }}-{{ year.YearEnd }}</p>
-                    <p class="card-text mt-2">This card represents the subject "{{ subject.SubjectName }}" with course code {{ subjects.CourseCode }}. Further details about the subject can be displayed here.</p>
-                    <small class="text-muted"><i class="bi bi-person-badge"></i> Taught by: Prof. John Doe</small>
+                    <h5 class="card-title fw-bold text-primary mb-2">
+                        <i class="bi bi-journal-code me-2"></i>{{ subject.SubjectName }}
+                        <span class="badge bg-light text-dark float-end">{{ subject.CourseCode }}</span>
+                    </h5>
+                    <p class="text-muted mb-1"><i class="bi bi-calendar-week me-1"></i>Academic Year: {{ year.YearStart }} - {{ year.YearEnd }}</p>
+                    <p class="text-muted mb-1"><i class="bi bi-mortarboard me-1"></i>Semester: {{ subject.Semester }}</p>
+                    <p class="card-text mt-2">This subject, identified by course code {{ subject.CourseCode }}, provides insight into key concepts and is part of the {{ subject.Semester }} semester curriculum.</p>
+                    <small class="text-muted"><i class="bi bi-person-badge me-1"></i> Taught by: Prof. John Doe</small>
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-info rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-info-circle me-2"></i>No subjects found for the selected year.
+            </div>
+        </div>
         {% endfor %}
-
     </div>
 </div>
+
+<!-- Optional Styling -->
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+</style>
+
+<!-- JavaScript to filter subjects -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const filterSelect = document.getElementById('academicYear');
+    const subjectCards = document.querySelectorAll('.subject-card');
+
+    filterSelect.addEventListener('change', () => {
+        const selectedYear = filterSelect.value;
+
+        let anyVisible = false;
+
+        subjectCards.forEach(card => {
+            const cardYear = card.getAttribute('data-year');
+
+            if (selectedYear === 'all' || cardYear === selectedYear) {
+                card.style.display = '';
+                anyVisible = true;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Show alert if no subjects visible
+        let alertEl = document.getElementById('noSubjectsAlert');
+        if (!anyVisible) {
+            if (!alertEl) {
+                alertEl = document.createElement('div');
+                alertEl.id = 'noSubjectsAlert';
+                alertEl.className = 'col-12';
+                alertEl.innerHTML = `
+                    <div class="alert alert-info rounded-4 shadow-sm" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>No subjects found for the selected year.
+                    </div>`;
+                document.getElementById('subjectsContainer').appendChild(alertEl);
+            }
+        } else if (alertEl) {
+            alertEl.remove();
+        }
+    });
+});
+</script>
 {% endblock %}
