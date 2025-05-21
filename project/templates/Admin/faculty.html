@@ -43,7 +43,6 @@
                     <option>Information Technology</option>
                     <option>Electronics</option>
                     <option>Mechanical</option>
-                    <!-- Add more departments as needed or populate dynamically -->
                 </select>
             </div>
             <div class="col-md-3">
@@ -53,7 +52,6 @@
                     <option>Associate Professor</option>
                     <option>Assistant Professor</option>
                     <option>Lecturer</option>
-                    <!-- Add more designations as needed or populate dynamically -->
                 </select>
             </div>
             <div class="col-md-2">
@@ -87,11 +85,11 @@
                         data-designation="{{ fac_member.Designation }}"
                         data-first-name="{{ fac_member.FirstName }}"
                         data-last-name="{{ fac_member.LastName }}"
-                        data-dob="{{ format_date_for_input(fac_member.DOB) }}"
+                        data-dob="{{ fac_member.DOB|format_date_for_input }}"
                         data-email="{{ fac_member.Email }}"
                         data-phone="{{ fac_member.Phone if fac_member.Phone else '' }}"
                         data-phone1="{{ fac_member.Phone1 if fac_member.Phone1 else '' }}"
-                        data-join-date="{{ format_date_for_input(fac_member.JoinDate) }}">
+                        data-join-date="{{ fac_member.JoinDate|format_date_for_input if fac_member.JoinDate else '' }}">
                         <td>{{ fac_member.ID }}</td>
                         <td class="faculty-name">{{ fac_member.FirstName }} {{ fac_member.LastName }}</td>
                         <td>{{ fac_member.Department }}</td>
@@ -121,7 +119,6 @@
             </table>
         </div>
     </div>
-    <!-- Pagination (Static for now, implement dynamic pagination if needed) -->
     <div class="card-footer bg-white">
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center mb-0">
@@ -172,7 +169,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Secondary Phone</label>
-                            <input type="tel" class="form-control" name="phone1" pattern="[0-9]{10,15}"> {# Corrected name to phone1 #}
+                            <input type="tel" class="form-control" name="phone1" pattern="[0-9]{10,15}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Department</label>
@@ -241,12 +238,11 @@
     </div>
 </div>
 
-
 <!-- Edit Faculty Modal -->
 <div class="modal fade" id="editFacultyModal" tabindex="-1" aria-labelledby="editFacultyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form method="POST" id="editFacultyForm"> {# Action will be set by JS #}
+            <form method="POST" id="editFacultyForm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editFacultyModalLabel">Edit Faculty</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -315,7 +311,7 @@
 <div class="modal fade" id="deleteFacultyModal" tabindex="-1" aria-labelledby="deleteFacultyModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="POST" id="deleteFacultyForm"> {# Action will be set by JS #}
+            <form method="POST" id="deleteFacultyForm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="deleteFacultyModalLabel">Confirm Deletion</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -342,7 +338,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('facultySearch');
     const departmentFilter = document.getElementById('departmentFilter');
     const designationFilter = document.getElementById('designationFilter');
-    const filterButton = document.getElementById('filterButton'); // Changed from applyFilterButton
+    const filterButton = document.getElementById('filterButton');
     const facultyTable = document.getElementById('facultyTable');
     const facultyRows = facultyTable.querySelectorAll('tbody tr');
     
@@ -354,9 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
         facultyRows.forEach(row => {
             const id = row.querySelector('td:nth-child(1)').textContent.toLowerCase();
             const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
-            const email = row.querySelector('td:nth-child(5)').textContent.toLowerCase(); // email is 5th child
-            const department = row.dataset.department; // Use data attribute
-            const designation = row.dataset.designation; // Use data attribute
+            const email = row.querySelector('td:nth-child(5)').textContent.toLowerCase();
+            const department = row.dataset.department;
+            const designation = row.dataset.designation;
             
             const matchesSearch = searchTerm === '' || 
                                  id.includes(searchTerm) || 
@@ -378,16 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (departmentFilter) departmentFilter.addEventListener('change', filterFaculty);
     if (designationFilter) designationFilter.addEventListener('change', filterFaculty);
     
-    filterFaculty(); // Initial filter apply
-
-    // Modal Handling
-    // Store faculty data (passed from Flask as JSON)
-    const facultyDataStore = {{ faculty_list_json | tojson | safe }};
-
-    // Function to get faculty data by ID from the store
-    function getFacultyById(id) {
-        return facultyDataStore.find(fac => fac.ID == id);
-    }
+    filterFaculty();
 
     // View Modal
     const viewFacultyModal = new bootstrap.Modal(document.getElementById('viewFacultyModal'));
@@ -395,62 +382,52 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
             const facultyId = row.dataset.facultyId;
-            const faculty = getFacultyById(facultyId);
-
-            if (faculty) {
-                document.getElementById('view_faculty_id').textContent = faculty.ID;
-                document.getElementById('view_full_name').textContent = faculty.FullName;
-                document.getElementById('view_dob').textContent = faculty.DOB ? new Date(faculty.DOB + 'T00:00:00').toLocaleDateString('en-GB') : 'N/A'; // Adjust date format if needed
-                document.getElementById('view_email').textContent = faculty.Email;
-                document.getElementById('view_phone').textContent = faculty.Phone || 'N/A';
-                document.getElementById('view_phone1').textContent = faculty.Phone1 || 'N/A';
-                document.getElementById('view_department').textContent = faculty.Department;
-                document.getElementById('view_designation').textContent = faculty.Designation;
-                document.getElementById('view_join_date').textContent = faculty.JoinDate ? new Date(faculty.JoinDate + 'T00:00:00').toLocaleDateString('en-GB') : 'N/A';
-            }
+            const facultyName = row.querySelector('.faculty-name').textContent;
+            const facultyEmail = row.querySelector('.faculty-email').textContent;
+            
+            document.getElementById('view_faculty_id').textContent = facultyId;
+            document.getElementById('view_full_name').textContent = facultyName;
+            document.getElementById('view_dob').textContent = row.dataset.dob ? new Date(row.dataset.dob).toLocaleDateString() : 'N/A';
+            document.getElementById('view_email').textContent = facultyEmail;
+            document.getElementById('view_phone').textContent = row.dataset.phone || 'N/A';
+            document.getElementById('view_phone1').textContent = row.dataset.phone1 || 'N/A';
+            document.getElementById('view_department').textContent = row.dataset.department;
+            document.getElementById('view_designation').textContent = row.dataset.designation;
+            document.getElementById('view_join_date').textContent = row.dataset.joinDate ? new Date(row.dataset.joinDate).toLocaleDateString() : 'N/A';
         });
     });
 
     // Edit Modal
     const editFacultyModal = new bootstrap.Modal(document.getElementById('editFacultyModal'));
-    const editFacultyForm = document.getElementById('editFacultyForm');
     document.querySelectorAll('.edit-faculty-btn').forEach(button => {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
-            const facultyId = row.dataset.facultyId;
-            const faculty = getFacultyById(facultyId);
-
-            if (faculty) {
-                editFacultyForm.action = `/edit_faculty/${faculty.ID}`; // Set form action
-                document.getElementById('edit_faculty_id_hidden').value = faculty.ID;
-                document.getElementById('edit_first_name').value = faculty.FirstName;
-                document.getElementById('edit_last_name').value = faculty.LastName || '';
-                document.getElementById('edit_dob').value = faculty.DOB; // YYYY-MM-DD from to_dict
-                document.getElementById('edit_email').value = faculty.Email;
-                document.getElementById('edit_phone').value = faculty.Phone || '';
-                document.getElementById('edit_phone1').value = faculty.Phone1 || '';
-                document.getElementById('edit_department').value = faculty.Department;
-                document.getElementById('edit_designation').value = faculty.Designation;
-                document.getElementById('edit_join_date').value = faculty.JoinDate; // YYYY-MM-DD from to_dict
-            }
+            document.getElementById('edit_faculty_id_hidden').value = row.dataset.facultyId;
+            document.getElementById('edit_first_name').value = row.dataset.firstName;
+            document.getElementById('edit_last_name').value = row.dataset.lastName;
+            document.getElementById('edit_dob').value = row.dataset.dob;
+            document.getElementById('edit_email').value = row.dataset.email;
+            document.getElementById('edit_phone').value = row.dataset.phone;
+            document.getElementById('edit_phone1').value = row.dataset.phone1;
+            document.getElementById('edit_department').value = row.dataset.department;
+            document.getElementById('edit_designation').value = row.dataset.designation;
+            document.getElementById('edit_join_date').value = row.dataset.joinDate;
         });
     });
 
     // Delete Modal
     const deleteFacultyModal = new bootstrap.Modal(document.getElementById('deleteFacultyModal'));
-    const deleteFacultyForm = document.getElementById('deleteFacultyForm');
     document.querySelectorAll('.delete-faculty-btn').forEach(button => {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
             const facultyId = row.dataset.facultyId;
             const facultyName = row.querySelector('.faculty-name').textContent;
 
-            deleteFacultyForm.action = `/delete_faculty/${facultyId}`;
             document.getElementById('delete_faculty_name').textContent = facultyName;
             document.getElementById('delete_faculty_id_span').textContent = facultyId;
+            document.getElementById('deleteFacultyForm').action = `/delete_faculty/${facultyId}`;
         });
     });
-
 });
 </script>
 {% endblock %}
