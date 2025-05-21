@@ -3,7 +3,6 @@
 <div class="container mt-5">
     <h2><i class="bi bi-list-check"></i> Your Activities</h2>
 
-    <!-- Filters -->
     <div class="card shadow-sm p-3 my-4">
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <strong>Filters:</strong>
@@ -23,14 +22,12 @@
         </div>
     </div>
 
-    <!-- Add Activity Button -->
     <div class="mb-3 text-end">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addActivityModal">
             <i class="bi bi-plus-circle"></i> Add New Activity
         </button>
     </div>
 
-    <!-- Activity Cards -->
     <div class="row g-3" id="activitiesContainer">
         {% for activity, type_name, category, year_start, year_end in activities %}
         <div class="col-md-6 activity-card" data-year="{{ activity.AcademicYearID }}" data-type="{{ activity.ActivityTypeID }}">
@@ -60,9 +57,114 @@
     </div>
 </div>
 
-<!-- Add Activity Modal and Edit Activity Modals here unchanged -->
+<div class="modal fade" id="addActivityModal" tabindex="-1" aria-labelledby="addActivityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addActivityModalLabel">Add New Activity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('add_activity') }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="faculty_id" value="{{ current_faculty_id }}"> 
 
-<!-- JavaScript for filtering -->
+                    <div class="mb-3">
+                        <label for="activityName" class="form-label">Activity Name</label>
+                        <input type="text" class="form-control" id="activityName" name="activity_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="activityTitle" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="activityTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="activityDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="activityDate" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="activityDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="activityDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="academicYear" class="form-label">Academic Year</label>
+                        <select class="form-select" id="academicYear" name="academic_year" required>
+                            {% for year in academic_years %}
+                                <option value="{{ year.ID }}">{{ year.YearStart }}-{{ year.YearEnd }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="activityType" class="form-label">Activity Type</label>
+                        <select class="form-select" id="activityType" name="activity_type" required>
+                            {% for type in activity_types %}
+                                <option value="{{ type.ID }}">{{ type.Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Activity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% for activity, type_name, category, year_start, year_end in activities %}
+<div class="modal fade" id="editActivityModal{{ activity.ID }}" tabindex="-1" aria-labelledby="editActivityModalLabel{{ activity.ID }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editActivityModalLabel{{ activity.ID }}">Edit Activity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('edit_activity', id=activity.ID) }}" method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="faculty_id" value="{{ current_faculty_id }}">
+
+                    <div class="mb-3">
+                        <label for="editActivityName{{ activity.ID }}" class="form-label">Activity Name</label>
+                        <input type="text" class="form-control" id="editActivityName{{ activity.ID }}" name="activity_name" value="{{ activity.Name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editActivityTitle{{ activity.ID }}" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="editActivityTitle{{ activity.ID }}" name="title" value="{{ activity.Title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editActivityDate{{ activity.ID }}" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editActivityDate{{ activity.ID }}" name="date" value="{{ activity.Date | format_date_for_input }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editActivityDescription{{ activity.ID }}" class="form-label">Description</label>
+                        <textarea class="form-control" id="editActivityDescription{{ activity.ID }}" name="description" rows="3">{{ activity.Description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editAcademicYear{{ activity.ID }}" class="form-label">Academic Year</label>
+                        <select class="form-select" id="editAcademicYear{{ activity.ID }}" name="academic_year" required>
+                            {% for year in academic_years %}
+                                <option value="{{ year.ID }}" {% if year.ID == activity.AcademicYearID %}selected{% endif %}>{{ year.YearStart }}-{{ year.YearEnd }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editActivityType{{ activity.ID }}" class="form-label">Activity Type</label>
+                        <select class="form-select" id="editActivityType{{ activity.ID }}" name="activity_type" required>
+                            {% for type in activity_types %}
+                                <option value="{{ type.ID }}" {% if type.ID == activity.ActivityTypeID %}selected{% endif %}>{{ type.Name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const yearFilter = document.getElementById('filterAcademicYear');

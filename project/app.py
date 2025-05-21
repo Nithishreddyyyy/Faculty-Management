@@ -1,13 +1,12 @@
-#app.py
+# app.py
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
-# Hardcoded Faculty ID for easy modification during development/testing
-TEST_FACULTY_ID = 1 
-# --- End Global Configuration ---
-
+# Remove TEST_FACULTY_ID from global scope or use it only as a development fallback
+# For dynamic faculty views, it's better to pass ID via URL or session
+# TEST_FACULTY_ID = 1 # Consider removing this if you're going fully dynamic
 
 app = Flask(__name__)
 app.secret_key = "Ramaiah Institute of Technology"
@@ -22,7 +21,7 @@ def format_date_for_input(value):
         return ""
     return value.strftime('%Y-%m-%d')
 
-# Models
+# Models (No changes needed here)
 class Faculty(db.Model):
     __tablename__ = 'Faculty'
     ID = db.Column(db.Integer, primary_key=True)
@@ -36,6 +35,9 @@ class Faculty(db.Model):
     Designation = db.Column(db.String(100), nullable=False)
     JoinDate = db.Column(db.Date)
     subjects_taught = db.relationship('Subject', back_populates='assigned_faculty', foreign_keys='Subject.FacultyID', lazy='dynamic')
+    # Add activities relationship for easier backref
+    activities = db.relationship('Activity', backref='faculty_member', lazy='dynamic')
+
 
 class AcademicYear(db.Model):
     __tablename__ = 'AcademicYear'
@@ -43,12 +45,16 @@ class AcademicYear(db.Model):
     YearStart = db.Column(db.Integer, nullable=False)
     YearEnd = db.Column(db.Integer, nullable=False)
     subjects_in_year = db.relationship('Subject', back_populates='academic_year_info', foreign_keys='Subject.AcademicYearID', lazy='dynamic')
+    # Add activities_in_year relationship for easier backref
+    activities_in_year = db.relationship('Activity', backref='academic_year_info', lazy='dynamic')
 
 class ActivityType(db.Model):
     __tablename__ = 'ActivityType'
     ID = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String(100), nullable=False, unique=True)
     Category = db.Column(db.String(100), nullable=False)
+    # Add activities relationship for easier backref
+    activities = db.relationship('Activity', backref='activity_type_info', lazy='dynamic')
 
 class Activity(db.Model):
     __tablename__ = 'Activity'
@@ -288,17 +294,17 @@ def appraisals():
 # Routes -- Faculty Views
 @app.route('/facultydashboard')
 def facultydashboard():
-    # Fetch current faculty using the global TEST_FACULTY_ID
-    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
+    # Retrieve faculty ID from query parameter, with a fallback for testing
+    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    
+    faculty = db.session.get(Faculty, faculty_id) 
     
     if not faculty:
-        flash(f"Faculty with ID {TEST_FACULTY_ID} not found.", 'danger')
-        return redirect(url_for('index')) # Redirect to a safe page if faculty not found
+        flash(f"Faculty with ID {faculty_id} not found.", 'danger')
+        return redirect(url_for('index'))
 
-    # Count subjects taught
     subject_count = faculty.subjects_taught.count()
 
-    # Fetch activities with their type (join with ActivityType)
     activities_query = db.session.query(
         Activity.Title,
         Activity.Date,
@@ -306,7 +312,6 @@ def facultydashboard():
     ).join(ActivityType, Activity.ActivityTypeID == ActivityType.ID).\
       filter(Activity.FacultyID == faculty.ID).all()
 
-    # Define color mapping for activity types
     color_map = {
         'Workshop': 'bg-primary',
         'Seminar': 'bg-success',
@@ -314,7 +319,6 @@ def facultydashboard():
         'Other': 'bg-secondary'
     }
 
-    # Enrich activities with colors
     activities = [{
         'Title': a.Title,
         'Date': a.Date,
@@ -322,10 +326,8 @@ def facultydashboard():
         'color': color_map.get(a.Type, 'bg-secondary')
     } for a in activities_query]
 
-    # Count of total activities
     activities_count = len(activities)
 
-    # Compute activity distribution (group by type)
     activity_type_counts = db.session.query(
         ActivityType.Name,
         db.func.count(Activity.ID)
@@ -335,7 +337,6 @@ def facultydashboard():
 
     total = sum(count for _, count in activity_type_counts)
 
-    # Distribution with percentage and color
     activity_distribution = [{
         'name': name,
         'count': count,
@@ -343,22 +344,26 @@ def facultydashboard():
         'color': 'bg-info' if i % 3 == 0 else 'bg-success' if i % 3 == 1 else 'bg-warning'
     } for i, (name, count) in enumerate(activity_type_counts)]
 
+    # Pass the faculty ID to the template for correct linking
     return render_template('Faculty/dashboard.html',
                            faculty=faculty,
                            subject_count=subject_count,
                            activities_count=activities_count,
                            activity_distribution=activity_distribution,
-                           activities=activities)
+                           activities=activities,
+                           current_faculty_id=faculty.ID)
 
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    # Fetch current faculty using the global TEST_FACULTY_ID
-    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
+    # Retrieve faculty ID from query parameter, with a fallback for testing
+    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    
+    faculty = db.session.get(Faculty, faculty_id) 
     
     if not faculty:
-        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for profile.", 'danger')
-        return redirect(url_for('index')) # Redirect to a safe page
+        flash(f"Faculty with ID {faculty_id} not found for profile.", 'danger')
+        return redirect(url_for('index'))
 
     if request.method == 'POST':
         faculty.FirstName = request.form['first_name']
@@ -372,30 +377,36 @@ def profile():
         faculty.JoinDate = datetime.strptime(request.form['join_date'], '%Y-%m-%d') if request.form['join_date'] else None
         db.session.commit()
         flash("Profile updated successfully!", "success")
-        return redirect(url_for('profile'))
+        return redirect(url_for('profile', faculty_id=faculty.ID)) # Pass faculty_id back
 
-    return render_template('Faculty/profile.html', faculty=faculty)
+    # Pass the faculty ID to the template for correct linking
+    return render_template('Faculty/profile.html', faculty=faculty, current_faculty_id=faculty.ID)
 
 @app.route('/subject')
 def subjects():
-    # Fetch current faculty using the global TEST_FACULTY_ID
-    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
+    # Retrieve faculty ID from query parameter, with a fallback for testing
+    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    
+    faculty = db.session.get(Faculty, faculty_id) 
     
     if not faculty:
-        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for subjects.", 'danger')
-        return redirect(url_for('index')) # Redirect to a safe page
+        flash(f"Faculty with ID {faculty_id} not found for subjects.", 'danger')
+        return redirect(url_for('index'))
 
     subjects = faculty.subjects_taught.join(AcademicYear).add_entity(AcademicYear).all()
-    return render_template('Faculty/subjects.html', subjects=subjects)
+    # Pass the faculty ID to the template for correct linking
+    return render_template('Faculty/subjects.html', subjects=subjects, current_faculty_id=faculty.ID)
 
 @app.route('/activity')
 def activity():
-    # Fetch current faculty using the global TEST_FACULTY_ID
-    faculty = db.session.get(Faculty, TEST_FACULTY_ID)
+    # Retrieve faculty ID from query parameter, with a fallback for testing
+    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    
+    faculty = db.session.get(Faculty, faculty_id)
     
     if not faculty:
-        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for activities.", 'danger')
-        return redirect(url_for('index')) # Redirect to a safe page
+        flash(f"Faculty with ID {faculty_id} not found for activities.", 'danger')
+        return redirect(url_for('index'))
 
     activities = Activity.query.filter_by(FacultyID=faculty.ID).join(ActivityType).join(AcademicYear).add_columns(
         ActivityType.Name.label('type_name'),
@@ -407,40 +418,76 @@ def activity():
     activity_types = ActivityType.query.all()
     academic_years = AcademicYear.query.all()
 
+    # Pass the faculty ID to the template for correct linking and form submission
     return render_template('Faculty/activities.html',
                            activities=activities,
                            activity_types=activity_types,
-                           academic_years=academic_years)
+                           academic_years=academic_years,
+                           current_faculty_id=faculty.ID)
 
 @app.route('/add_activity', methods=['POST'])
 def add_activity():
-    # Use the global TEST_FACULTY_ID for adding activities
-    new_activity = Activity(
-        Name=request.form['activity_name'],
-        Title=request.form['title'],
-        Date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
-        Description=request.form.get('description'),
-        AcademicYearID=int(request.form['academic_year']),
-        ActivityTypeID=int(request.form['activity_type']),
-        FacultyID=TEST_FACULTY_ID # Using the global constant here
-    )
-    db.session.add(new_activity)
-    db.session.commit()
-    flash('Activity added successfully!', 'success')
-    return redirect(url_for('activity'))
+    # Ensure faculty_id is passed from the form or session
+    faculty_id = request.form.get('faculty_id', type=int) 
+    if not faculty_id:
+        # Fallback for direct access or missing form field during testing
+        faculty_id = request.args.get('faculty_id', type=int, default=1) 
+        if not faculty_id:
+            flash("Faculty ID is missing for adding activity.", 'danger')
+            return redirect(url_for('index'))
+
+    try:
+        new_activity = Activity(
+            Name=request.form['activity_name'],
+            Title=request.form['title'],
+            Date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
+            Description=request.form.get('description'),
+            AcademicYearID=int(request.form['academic_year']),
+            ActivityTypeID=int(request.form['activity_type']),
+            FacultyID=faculty_id # Use the retrieved faculty_id
+        )
+        db.session.add(new_activity)
+        db.session.commit()
+        flash('Activity added successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding activity: {str(e)}', 'danger')
+    
+    # Redirect back to the activity page for the correct faculty
+    return redirect(url_for('activity', faculty_id=faculty_id))
 
 @app.route('/edit_activity/<int:id>', methods=['POST'])
 def edit_activity(id):
-    activity = Activity.query.get_or_404(id)
-    activity.Name = request.form['activity_name']
-    activity.Title = request.form['title']
-    activity.Date = datetime.strptime(request.form['date'], '%Y-%m-%d')
-    activity.Description = request.form.get('description')
-    activity.AcademicYearID = int(request.form['academic_year'])
-    activity.ActivityTypeID = int(request.form['activity_type'])
-    db.session.commit()
-    flash('Activity updated successfully!', 'success')
-    return redirect(url_for('activity'))
+    # Ensure faculty_id is passed from the form or session
+    faculty_id = request.form.get('faculty_id', type=int)
+    if not faculty_id:
+        # Fallback for direct access or missing form field during testing
+        faculty_id = request.args.get('faculty_id', type=int, default=1)
+        if not faculty_id:
+            flash("Faculty ID is missing for editing activity.", 'danger')
+            return redirect(url_for('index'))
+
+    try:
+        activity = Activity.query.get_or_404(id)
+        # Ensure the activity belongs to the current faculty to prevent unauthorized edits
+        if activity.FacultyID != faculty_id:
+            flash("You do not have permission to edit this activity.", 'danger')
+            return redirect(url_for('activity', faculty_id=faculty_id))
+
+        activity.Name = request.form['activity_name']
+        activity.Title = request.form['title']
+        activity.Date = datetime.strptime(request.form['date'], '%Y-%m-%d')
+        activity.Description = request.form.get('description')
+        activity.AcademicYearID = int(request.form['academic_year'])
+        activity.ActivityTypeID = int(request.form['activity_type'])
+        db.session.commit()
+        flash('Activity updated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating activity: {str(e)}', 'danger')
+    
+    # Redirect back to the activity page for the correct faculty
+    return redirect(url_for('activity', faculty_id=faculty_id))
 
 if __name__ == '__main__':
     app.run(debug=True, port=8000)
