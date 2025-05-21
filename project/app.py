@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,redirect,url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
@@ -174,7 +174,7 @@ def subjects_view():
                            academic_years=academic_years,
                            current_year=current_year)
 
-@app.route('/add_subject', methods=['POST'])
+@app.route('/add_activity', methods=['POST'])
 def add_subject():
     course_code = request.form.get('course_code')
     subject_name = request.form.get('subject_name')
@@ -218,6 +218,94 @@ def appraisals():
 # -- End of Admin View --
 
 # -- Start of Faculty View --
+@app.route('/facultydashboard')
+def facultydashboard():
+    faculty = Faculty.query.first()  # Get first or currently logged-in faculty
+    subject_count = faculty.subjects_taught.count()
+    activities_count = Activity.query.filter_by(FacultyID=faculty.ID).count()
+    return render_template(
+        './Faculty/dashboard.html',
+        faculty=faculty,
+        subject_count=subject_count,
+        activities_count=activities_count
+    )
+
+
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    # TODO: Replace with session-based faculty retrieval (e.g., based on logged-in user)
+    faculty = Faculty.query.first()
+
+    if request.method == 'POST':
+        faculty.FirstName = request.form['first_name']
+        faculty.LastName = request.form['last_name']
+        faculty.DOB = request.form['dob']
+        faculty.Email = request.form['email']
+        faculty.Phone = request.form['phone']
+        faculty.Phone1 = request.form['alt_phone']
+        faculty.Department = request.form['department']
+        faculty.Designation = request.form['designation']
+        faculty.JoinDate = request.form['join_date']
+
+        db.session.commit()
+        flash("Profile updated successfully!", "success")  # Optional user feedback
+
+        return redirect(url_for('profile'))
+
+    return render_template('./Faculty/profile.html', faculty=faculty)
+
+
+@app.route('/subject')
+def subjects():
+    faculty = Faculty.query.first()
+    subjects = faculty.subjects_taught.join(AcademicYear).add_entity(AcademicYear).all()
+    return render_template('./Faculty/subjects.html', subjects=subjects)
+
+@app.route('/activity')
+def activity():
+    faculty = Faculty.query.first()  # Replace with logged-in faculty if using auth
+    activities = Activity.query.filter_by(FacultyID=faculty.ID).join(ActivityType).join(AcademicYear).add_columns(
+        ActivityType.Name.label('type_name'),
+        ActivityType.Category.label('category'),
+        AcademicYear.YearStart,
+        AcademicYear.YearEnd
+    ).all()
+
+    activity_types = ActivityType.query.all()
+    academic_years = AcademicYear.query.all()
+
+    return render_template(
+        '/Faculty/activities.html',
+        activities=activities,
+        activity_types=activity_types,
+        academic_years=academic_years
+    )
+@app.route('/add_activity', methods=['POST'])
+def add_activity():
+    new_activity = Activity(
+        Name=request.form['Name'],
+        Title=request.form['Title'],
+        Date=request.form['Date'],
+        Description=request.form['Description'],
+        AcademicYearID=request.form['AcademicYearID'],
+        ActivityTypeID=request.form['ActivityTypeID'],
+        FacultyID=1  # Replace with session or actual ID
+    )
+    db.session.add(new_activity)
+    db.session.commit()
+    return redirect(url_for('activity'))
+
+@app.route('/edit_activity/<int:id>', methods=['POST'])
+def edit_activity(id):
+    activity = Activity.query.get_or_404(id)
+    activity.Name = request.form['Name']
+    activity.Title = request.form['Title']
+    activity.Date = request.form['Date']
+    activity.Description = request.form['Description']
+    activity.AcademicYearID = request.form['AcademicYearID']
+    activity.ActivityTypeID = request.form['ActivityTypeID']
+    db.session.commit()
+    return redirect(url_for('activity'))
 
 
 

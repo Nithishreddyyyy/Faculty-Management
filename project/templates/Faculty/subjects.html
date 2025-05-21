@@ -1,0 +1,32 @@
+<!-- subjects.html -->
+{% extends './Faculty/base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4"><i class="bi bi-journal-bookmark"></i> Your Subjects</h2>
+
+    <div class="mb-3">
+        <label for="academicYear" class="form-label">Filter by Academic Year:</label>
+        <select id="academicYear" class="form-select" aria-label="Filter by Academic Year">
+            <option selected>All Years</option>
+            <option value="2024-2025">2024-2025</option>
+            <option value="2023-2024">2023-2024</option>
+            <!-- Add more years dynamically if needed -->
+        </select>
+    </div>
+
+        {% for subject, year in subjects %}
+         <div class="col-md-10 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-journal-code"></i> {{ subject.SubjectName }}<span class="badge bg-light text-dark float-end">{{ subjects.CourseCode }}</span></h5>
+                    <p class="card-subtitle text-muted">Academic Year:  {{ year.YearStart }}-{{ year.YearEnd }}</p>
+                    <p class="card-text mt-2">This card represents the subject "{{ subject.SubjectName }}" with course code {{ subjects.CourseCode }}. Further details about the subject can be displayed here.</p>
+                    <small class="text-muted"><i class="bi bi-person-badge"></i> Taught by: Prof. John Doe</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

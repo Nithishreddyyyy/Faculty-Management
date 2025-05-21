@@ -1,0 +1,76 @@
+{% extends './Faculty/base.html' %}
+
+{% block title %}Dashboard | FacultyHub{% endblock %}
+
+{% block content %}
+
+<!-- Hero Banner -->
+<div class="bg-secondary text-white rounded p-5 mb-4 text-center" style="height: 200px;">
+    <h1 class="display-5 fw-bold">Welcome, {{ faculty.FirstName }}!</h1>
+    <p class="lead">Here's your Faculty dashboard.</p>
+</div>
+
+<!-- Stats Section -->
+<h4 class="mb-3">Your Stats</h4>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title fw-bold">{{ faculty.Designation }}. {{ faculty.FirstName }} {{ faculty.LastName }}</h5>
+                <p class="mb-1 text-muted">{{ faculty.Designation }}, {{ faculty.Department }}</p>
+                <p class="mb-1"><strong>Email:</strong> {{ faculty.Email }}</p>
+                <p><strong>Joined:</strong> {{ faculty.JoinDate }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-left">
+                <h6 class="text-muted">Subjects Taught</h6>
+                <h2 class="fw-bold">{{ subject_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-left">
+                <h6 class="text-muted">Activities Logged</h6>
+                <h2 class="fw-bold">{{ activities_count }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<h4 class="mb-3">Quick Actions</h4>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-person-fill me-2"></i>Profile</h5>
+                <p class="text-muted">View and update your personal and professional details.</p>
+                <a href="./profile" class="btn btn-outline-primary w-100">Manage Profile</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-journal-text me-2"></i>Subjects</h5>
+                <p class="text-muted">Manage your assigned subjects and view details.</p>
+                <a href="./subject" class="btn btn-outline-primary w-100">Manage Subjects</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title"><i class="bi bi-list-check me-2"></i>Activities</h5>
+                <p class="text-muted">Log and track your academic and professional activities.</p>
+                <a href="./activity" class="btn btn-outline-primary w-100">Manage Activities</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
