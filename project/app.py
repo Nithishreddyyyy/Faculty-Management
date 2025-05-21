@@ -4,6 +4,13 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
+# --- Global Configuration ---
+# Hardcoded Faculty ID for easy modification during development/testing
+# Change this value to switch the faculty displayed on the dashboard and for adding activities.
+TEST_FACULTY_ID = 1 
+# --- End Global Configuration ---
+
+
 app = Flask(__name__)
 app.secret_key = "Ramaiah Institute of Technology"
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -283,9 +290,12 @@ def appraisals():
 # Routes -- Faculty Views
 @app.route('/facultydashboard')
 def facultydashboard():
-    # Fetch current faculty (adjust logic as needed for logged-in user)
+    # Fetch current faculty using the global TEST_FACULTY_ID
+    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
     
-    faculty = Faculty.query.get(2)  # Replace with actual faculty ID or session data
+    if not faculty:
+        flash(f"Faculty with ID {TEST_FACULTY_ID} not found.", 'danger')
+        return redirect(url_for('index')) # Redirect to a safe page if faculty not found
 
     # Count subjects taught
     subject_count = faculty.subjects_taught.count()
@@ -345,18 +355,23 @@ def facultydashboard():
 
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
-    faculty = Faculty.query.first()
+    # Fetch current faculty using the global TEST_FACULTY_ID
+    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
+    
+    if not faculty:
+        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for profile.", 'danger')
+        return redirect(url_for('index')) # Redirect to a safe page
 
     if request.method == 'POST':
         faculty.FirstName = request.form['first_name']
         faculty.LastName = request.form['last_name']
-        faculty.DOB = request.form['dob']
+        faculty.DOB = datetime.strptime(request.form['dob'], '%Y-%m-%d')
         faculty.Email = request.form['email']
         faculty.Phone = request.form['phone']
         faculty.Phone1 = request.form['alt_phone']
         faculty.Department = request.form['department']
         faculty.Designation = request.form['designation']
-        faculty.JoinDate = request.form['join_date']
+        faculty.JoinDate = datetime.strptime(request.form['join_date'], '%Y-%m-%d') if request.form['join_date'] else None
         db.session.commit()
         flash("Profile updated successfully!", "success")
         return redirect(url_for('profile'))
@@ -365,13 +380,25 @@ def profile():
 
 @app.route('/subject')
 def subjects():
-    faculty = Faculty.query.first()
+    # Fetch current faculty using the global TEST_FACULTY_ID
+    faculty = db.session.get(Faculty, TEST_FACULTY_ID) 
+    
+    if not faculty:
+        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for subjects.", 'danger')
+        return redirect(url_for('index')) # Redirect to a safe page
+
     subjects = faculty.subjects_taught.join(AcademicYear).add_entity(AcademicYear).all()
     return render_template('Faculty/subjects.html', subjects=subjects)
 
 @app.route('/activity')
 def activity():
-    faculty = Faculty.query.first()
+    # Fetch current faculty using the global TEST_FACULTY_ID
+    faculty = db.session.get(Faculty, TEST_FACULTY_ID)
+    
+    if not faculty:
+        flash(f"Faculty with ID {TEST_FACULTY_ID} not found for activities.", 'danger')
+        return redirect(url_for('index')) # Redirect to a safe page
+
     activities = Activity.query.filter_by(FacultyID=faculty.ID).join(ActivityType).join(AcademicYear).add_columns(
         ActivityType.Name.label('type_name'),
         ActivityType.Category.label('category'),
@@ -389,14 +416,15 @@ def activity():
 
 @app.route('/add_activity', methods=['POST'])
 def add_activity():
+    # Use the global TEST_FACULTY_ID for adding activities
     new_activity = Activity(
         Name=request.form['activity_name'],
         Title=request.form['title'],
-        Date=request.form['date'],
+        Date=datetime.strptime(request.form['date'], '%Y-%m-%d'),
         Description=request.form.get('description'),
-        AcademicYearID=request.form['academic_year'],
-        ActivityTypeID=request.form['activity_type'],
-        FacultyID=1
+        AcademicYearID=int(request.form['academic_year']),
+        ActivityTypeID=int(request.form['activity_type']),
+        FacultyID=TEST_FACULTY_ID # Using the global constant here
     )
     db.session.add(new_activity)
     db.session.commit()
@@ -408,10 +436,10 @@ def edit_activity(id):
     activity = Activity.query.get_or_404(id)
     activity.Name = request.form['activity_name']
     activity.Title = request.form['title']
-    activity.Date = request.form['date']
+    activity.Date = datetime.strptime(request.form['date'], '%Y-%m-%d')
     activity.Description = request.form.get('description')
-    activity.AcademicYearID = request.form['academic_year']
-    activity.ActivityTypeID = request.form['activity_type']
+    activity.AcademicYearID = int(request.form['academic_year'])
+    activity.ActivityTypeID = int(request.form['activity_type'])
     db.session.commit()
     flash('Activity updated successfully!', 'success')
     return redirect(url_for('activity'))
