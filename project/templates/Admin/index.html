@@ -20,7 +20,6 @@
 {% block content %}
 {% set active_page = 'dashboard' %} {# This helps base.html set the active nav link #}
 
-<!-- Dashboard Stats -->
 <div class="row mb-4">
     <div class="col-12">
         <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
@@ -74,11 +73,10 @@
     </div>
 </div>
 
-<!-- Recent Activities Section -->
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Recent Activities</h5>
-        <a href="#" class="btn btn-primary btn-sm">View All</a>
+        <a href="{{ url_for('activities_view') }}" class="btn btn-primary btn-sm">View All</a>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -94,14 +92,30 @@
                 </thead>
                 <tbody>
                     {% for activity in recent_activities %}
-                    <tr>
+                    <tr data-activity-id="{{ activity.ID }}"
+                        data-activity-name="{{ activity.Name }}"
+                        data-activity-title="{{ activity.Title }}"
+                        data-activity-date="{{ activity.Date | format_date_for_input }}"
+                        data-activity-description="{{ activity.Description }}"
+                        data-activity-type-id="{{ activity.ActivityTypeID }}"
+                        data-faculty-id="{{ activity.FacultyID }}"
+                        data-academic-year-id="{{ activity.AcademicYearID }}"
+                        data-faculty-name="{{ activity.faculty_name }}"
+                        data-activity-type="{{ activity.activity_type }}"
+                        data-academic-year="{{ activity.academic_year }}">
                         <td>{{ activity.Title }}</td>
                         <td>{{ activity.faculty_name }}</td>
                         <td><span class="badge bg-info">{{ activity.activity_type }}</span></td>
                         <td>{{ activity.Date.strftime('%d-%m-%Y') }}</td>
                         <td>
-                            <button class="btn btn-outline-primary btn-sm me-1"><i class="bi bi-eye"></i></button>
-                            <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-outline-primary btn-sm me-1 view-activity-btn" title="View Details"
+                                    data-bs-toggle="modal" data-bs-target="#viewActivityModal">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm edit-activity-btn" title="Edit Activity"
+                                    data-bs-toggle="modal" data-bs-target="#editActivityModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -111,7 +125,6 @@
     </div>
 </div>
 
-<!-- Faculty List Section -->
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
         <h5 class="mb-0"><i class="bi bi-people"></i> Faculty Members</h5>
@@ -130,19 +143,37 @@
                         <th>Email</th>
                         <th>Actions</th>
                     </tr>
-                </thead>
+</thead>
                 <tbody>
                     {% for faculty_member in faculty_list %} {# Renamed to avoid conflict with faculty route name #}
-                    <tr>
+                    <tr data-faculty-id="{{ faculty_member.ID }}"
+                        data-first-name="{{ faculty_member.FirstName }}"
+                        data-last-name="{{ faculty_member.LastName }}"
+                        data-dob="{{ faculty_member.DOB | format_date_for_input }}"
+                        data-email="{{ faculty_member.Email }}"
+                        data-phone="{{ faculty_member.Phone }}"
+                        data-phone1="{{ faculty_member.Phone1 }}"
+                        data-department="{{ faculty_member.Department }}"
+                        data-designation="{{ faculty_member.Designation }}"
+                        data-join-date="{{ faculty_member.JoinDate | format_date_for_input }}">
                         <td>{{ faculty_member.FirstName }} {{ faculty_member.LastName }}</td>
                         <td>{{ faculty_member.Department }}</td>
                         <td>{{ faculty_member.Designation }}</td>
                         <td>{{ faculty_member.Email }}</td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">
-                                <button type="button" class="btn btn-outline-primary"><i class="bi bi-person"></i></button>
-                                <button type="button" class="btn btn-outline-info"><i class="bi bi-calendar-event"></i></button>
-                                <button type="button" class="btn btn-outline-success"><i class="bi bi-award"></i></button>
+                                <button type="button" class="btn btn-outline-primary view-faculty-btn" title="View Profile"
+                                        data-bs-toggle="modal" data-bs-target="#viewFacultyModal">
+                                    <i class="bi bi-person"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary edit-faculty-btn" title="Edit Profile"
+                                        data-bs-toggle="modal" data-bs-target="#editFacultyModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger delete-faculty-btn" title="Delete Faculty"
+                                        data-bs-toggle="modal" data-bs-target="#deleteFacultyModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -153,7 +184,92 @@
     </div>
 </div>
 
-<!-- Add Faculty Modal -->
+<div class="modal fade" id="viewActivityModal" tabindex="-1" aria-labelledby="viewActivityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewActivityModalLabel">Activity Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tr><th style="width: 30%;">Activity Name</th><td id="view_activity_name_title"></td></tr>
+                    <tr><th>Activity Title</th><td id="view_activity_title"></td></tr>
+                    <tr><th>Date</th><td id="view_activity_date"></td></tr>
+                    <tr><th>Type</th><td id="view_activity_type"></td></tr>
+                    <tr><th>Faculty</th><td id="view_activity_faculty"></td></tr>
+                    <tr><th>Academic Year</th><td id="view_activity_academic_year"></td></tr>
+                    <tr><th>Description</th><td id="view_activity_description"></td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editActivityModal" tabindex="-1" aria-labelledby="editActivityModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="editActivityForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editActivityModalLabel">Edit Activity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_activity_id" name="activity_id">
+                    <div class="mb-3">
+                        <label for="edit_activity_name" class="form-label">Activity Name</label>
+                        <input type="text" class="form-control" id="edit_activity_name" name="activity_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="edit_activity_title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_date" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="edit_activity_date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_activity_description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_type_id" class="form-label">Activity Type</label>
+                        <select class="form-select" id="edit_activity_type_id" name="activity_type" required>
+                            {% for type in activity_types %}
+                            <option value="{{ type.ID }}">{{ type.Name }} ({{ type.Category }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_faculty_id" class="form-label">Faculty</label>
+                        <select class="form-select" id="edit_activity_faculty_id" name="faculty_id" required>
+                            {% for faculty_member in faculties %}
+                            <option value="{{ faculty_member.ID }}">{{ faculty_member.FirstName }} {{ faculty_member.LastName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_activity_academic_year_id" class="form-label">Academic Year</label>
+                        <select class="form-select" id="edit_activity_academic_year_id" name="academic_year" required>
+                            {% for year in academic_years %}
+                            <option value="{{ year.ID }}">{{ year.YearStart }} - {{ year.YearEnd }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 <div class="modal fade" id="addFacultyModal" tabindex="-1" aria-labelledby="addFacultyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -222,4 +338,208 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="viewFacultyModal" tabindex="-1" aria-labelledby="viewFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewFacultyModalLabel">Faculty Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tr><th style="width: 30%;">Name</th><td id="view_faculty_name"></td></tr>
+                    <tr><th>Date of Birth</th><td id="view_faculty_dob"></td></tr>
+                    <tr><th>Email</th><td id="view_faculty_email"></td></tr>
+                    <tr><th>Primary Phone</th><td id="view_faculty_phone"></td></tr>
+                    <tr><th>Secondary Phone</th><td id="view_faculty_phone1"></td></tr>
+                    <tr><th>Department</th><td id="view_faculty_department"></td></tr>
+                    <tr><th>Designation</th><td id="view_faculty_designation"></td></tr>
+                    <tr><th>Join Date</th><td id="view_faculty_join_date"></td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editFacultyModal" tabindex="-1" aria-labelledby="editFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="editFacultyForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editFacultyModalLabel">Edit Faculty Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit_faculty_id" name="faculty_id">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="edit_faculty_first_name" name="first_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="edit_faculty_last_name" name="last_name">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="edit_faculty_dob" name="dob" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="edit_faculty_email" name="email" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Primary Phone</label>
+                            <input type="tel" class="form-control" id="edit_faculty_phone" name="phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Secondary Phone</label>
+                            <input type="tel" class="form-control" id="edit_faculty_phone1" name="secondary_phone">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <select class="form-select" id="edit_faculty_department" name="department" required>
+                                <option>Computer Science</option>
+                                <option>Information Technology</option>
+                                <option>Electronics</option>
+                                <option>Mechanical</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Designation</label>
+                            <select class="form-select" id="edit_faculty_designation" name="designation" required>
+                                <option>Professor</option>
+                                <option>Associate Professor</option>
+                                <option>Assistant Professor</option>
+                                <option>Lecturer</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Join Date</label>
+                            <input type="date" class="form-control" id="edit_faculty_join_date" name="join_date">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteFacultyModal" tabindex="-1" aria-labelledby="deleteFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="deleteFacultyForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteFacultyModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete faculty member: <strong id="delete_faculty_name"></strong>?</p>
+                    <p class="text-danger">This action cannot be undone and will also remove subjects and activities associated with this faculty.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Faculty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- Activity Modals Logic ---
+    document.querySelectorAll('.view-activity-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            document.getElementById('view_activity_name_title').textContent = row.dataset.activityName;
+            document.getElementById('view_activity_title').textContent = row.dataset.activityTitle;
+            document.getElementById('view_activity_date').textContent = row.dataset.activityDate;
+            document.getElementById('view_activity_type').textContent = row.dataset.activityType;
+            document.getElementById('view_activity_faculty').textContent = row.dataset.facultyName;
+            document.getElementById('view_activity_academic_year').textContent = row.dataset.academicYear;
+            document.getElementById('view_activity_description').textContent = row.dataset.activityDescription;
+        });
+    });
+
+    document.querySelectorAll('.edit-activity-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const activityId = row.dataset.activityId;
+
+            document.getElementById('edit_activity_id').value = activityId;
+            document.getElementById('edit_activity_name').value = row.dataset.activityName;
+            document.getElementById('edit_activity_title').value = row.dataset.activityTitle;
+            document.getElementById('edit_activity_date').value = row.dataset.activityDate;
+            document.getElementById('edit_activity_description').value = row.dataset.activityDescription;
+            document.getElementById('edit_activity_type_id').value = row.dataset.activityTypeId;
+            document.getElementById('edit_activity_faculty_id').value = row.dataset.facultyId;
+            document.getElementById('edit_activity_academic_year_id').value = row.dataset.academicYearId;
+
+            const editForm = document.getElementById('editActivityForm');
+            editForm.action = `/edit_admin_activity/${activityId}`;
+        });
+    });
+
+    // --- Faculty Modals Logic ---
+    document.querySelectorAll('.view-faculty-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            document.getElementById('view_faculty_name').textContent = `${row.dataset.firstName} ${row.dataset.lastName}`;
+            document.getElementById('view_faculty_dob').textContent = row.dataset.dob;
+            document.getElementById('view_faculty_email').textContent = row.dataset.email;
+            document.getElementById('view_faculty_phone').textContent = row.dataset.phone;
+            document.getElementById('view_faculty_phone1').textContent = row.dataset.phone1;
+            document.getElementById('view_faculty_department').textContent = row.dataset.department;
+            document.getElementById('view_faculty_designation').textContent = row.dataset.designation;
+            document.getElementById('view_faculty_join_date').textContent = row.dataset.joinDate;
+        });
+    });
+
+    document.querySelectorAll('.edit-faculty-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const facultyId = row.dataset.facultyId;
+
+            document.getElementById('edit_faculty_id').value = facultyId;
+            document.getElementById('edit_faculty_first_name').value = row.dataset.firstName;
+            document.getElementById('edit_faculty_last_name').value = row.dataset.lastName;
+            document.getElementById('edit_faculty_dob').value = row.dataset.dob;
+            document.getElementById('edit_faculty_email').value = row.dataset.email;
+            document.getElementById('edit_faculty_phone').value = row.dataset.phone;
+            document.getElementById('edit_faculty_phone1').value = row.dataset.phone1;
+            document.getElementById('edit_faculty_department').value = row.dataset.department;
+            document.getElementById('edit_faculty_designation').value = row.dataset.designation;
+            document.getElementById('edit_faculty_join_date').value = row.dataset.joinDate;
+
+            const editForm = document.getElementById('editFacultyForm');
+            editForm.action = `/edit_faculty/${facultyId}`;
+        });
+    });
+
+    document.querySelectorAll('.delete-faculty-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const facultyId = row.dataset.facultyId;
+            const fullName = `${row.dataset.firstName} ${row.dataset.lastName}`;
+
+            document.getElementById('delete_faculty_name').textContent = fullName;
+            
+            const deleteForm = document.getElementById('deleteFacultyForm');
+            deleteForm.action = `/delete_faculty/${facultyId}`;
+        });
+    });
+});
+</script>
 {% endblock %}

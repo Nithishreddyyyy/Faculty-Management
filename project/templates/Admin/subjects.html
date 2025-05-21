@@ -14,7 +14,6 @@
     </div>
 </div>
 
-<!-- Flash Messages -->
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, message in messages %}
@@ -26,21 +25,16 @@
   {% endif %}
 {% endwith %}
 
-<!-- Filters and Search (Optional - can be added later if needed) -->
-<!-- 
 <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-4">
-                <input type="text" class="form-control" id="subjectSearch" placeholder="Search subjects (Code, Name)...">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="subjectSearch" placeholder="Search by Course Code or Subject Name..." onkeyup="filterTable()">
             </div>
-            Add more filters if needed
-        </div>
+            </div>
     </div>
 </div>
--->
 
-<!-- Subject List -->
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -56,7 +50,12 @@
                 </thead>
                 <tbody>
                     {% for subject in subject_list %}
-                    <tr data-course-code="{{ subject.CourseCode }}">
+                    <tr data-course-code="{{ subject.CourseCode }}"
+                        data-subject-name="{{ subject.SubjectName }}"
+                        data-faculty-id="{{ subject.FacultyID }}"
+                        data-academic-year-id="{{ subject.AcademicYearID }}"
+                        data-faculty-name="{{ subject.assigned_faculty.FirstName if subject.assigned_faculty else 'N/A' }} {{ subject.assigned_faculty.LastName if subject.assigned_faculty else '' }}"
+                        data-academic-year="{{ subject.academic_year_info.YearStart if subject.academic_year_info else 'N/A' }} - {{ subject.academic_year_info.YearEnd if subject.academic_year_info else '' }}">
                         <td>{{ subject.CourseCode }}</td>
                         <td class="subject-name">{{ subject.SubjectName }}</td>
                         <td>
@@ -95,7 +94,6 @@
             </table>
         </div>
     </div>
-    <!-- Pagination (Static for now) -->
     <div class="card-footer bg-white">
         <nav aria-label="Page navigation">
             <ul class="pagination justify-content-center mb-0">
@@ -107,7 +105,6 @@
     </div>
 </div>
 
-<!-- Add Subject Modal -->
 <div class="modal fade" id="addSubjectModal" tabindex="-1" aria-labelledby="addSubjectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -153,7 +150,6 @@
     </div>
 </div>
 
-<!-- View Subject Modal -->
 <div class="modal fade" id="viewSubjectModal" tabindex="-1" aria-labelledby="viewSubjectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -176,7 +172,6 @@
     </div>
 </div>
 
-<!-- Edit Subject Modal -->
 <div class="modal fade" id="editSubjectModal" tabindex="-1" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -188,17 +183,18 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="edit_course_code_display" class="form-label">Course Code</label>
-                        <input type="text" class="form-control" id="edit_course_code_display" name="edit_course_code_display" readonly>
-                        {# Course code is PK, typically not edited. If it is, a hidden field might be needed for the original PK #}
+                        <input type="text" class="form-control" id="edit_course_code_display" name="course_code" readonly>
+                        {# This hidden field will send the original CourseCode as the identifier for update #}
+                        <input type="hidden" id="original_course_code" name="original_course_code">
                     </div>
                     <div class="mb-3">
                         <label for="edit_subject_name" class="form-label">Subject Name</label>
-                        <input type="text" class="form-control" id="edit_subject_name" name="edit_subject_name" required>
+                        <input type="text" class="form-control" id="edit_subject_name" name="subject_name" required>
                     </div>
                     <div class="mb-3">
                         <label for="edit_faculty_id" class="form-label">Assign Faculty</label>
-                        <select class="form-select" id="edit_faculty_id" name="edit_faculty_id">
-                            <option value="None">None</option> {# Use "None" as string value for no selection #}
+                        <select class="form-select" id="edit_faculty_id" name="faculty_id">
+                            <option value="">None</option> {# Use empty string for no selection #}
                             {% for faculty_member in faculties %}
                             <option value="{{ faculty_member.ID }}">{{ faculty_member.FirstName }} {{ faculty_member.LastName }}</option>
                             {% endfor %}
@@ -206,8 +202,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="edit_academic_year_id" class="form-label">Academic Year</label>
-                        <select class="form-select" id="edit_academic_year_id" name="edit_academic_year_id">
-                            <option value="None">None</option> {# Use "None" as string value for no selection #}
+                        <select class="form-select" id="edit_academic_year_id" name="academic_year_id">
+                            <option value="">None</option> {# Use empty string for no selection #}
                             {% for year in academic_years %}
                             <option value="{{ year.ID }}">{{ year.YearStart }} - {{ year.YearEnd }}</option>
                             {% endfor %}
@@ -223,7 +219,6 @@
     </div>
 </div>
 
-<!-- Delete Subject Modal -->
 <div class="modal fade" id="deleteSubjectModal" tabindex="-1" aria-labelledby="deleteSubjectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -250,76 +245,83 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Store subject data (passed from Flask as JSON)
-    const subjectDataStore = {{ subject_list_json | tojson | safe }};
 
-    function getSubjectByCourseCode(courseCode) {
-        return subjectDataStore.find(sub => sub.CourseCode === courseCode);
-    }
-
-    // View Modal
-    const viewSubjectModalEl = document.getElementById('viewSubjectModal');
-    if (viewSubjectModalEl) {
-        // const viewSubjectModal = new bootstrap.Modal(viewSubjectModalEl); // Initialize if needed, or rely on data-bs-toggle
-        document.querySelectorAll('.view-subject-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const courseCode = row.dataset.courseCode;
-                const subject = getSubjectByCourseCode(courseCode);
-
-                if (subject) {
-                    document.getElementById('view_course_code').textContent = subject.CourseCode;
-                    document.getElementById('view_subject_name').textContent = subject.SubjectName;
-                    document.getElementById('view_assigned_faculty').textContent = subject.FacultyName || 'N/A';
-                    document.getElementById('view_academic_year').textContent = subject.AcademicYear || 'N/A';
-                }
-            });
+    // --- View Subject Modal Logic ---
+    document.querySelectorAll('.view-subject-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            document.getElementById('view_course_code').textContent = row.dataset.courseCode;
+            document.getElementById('view_subject_name').textContent = row.dataset.subjectName;
+            document.getElementById('view_assigned_faculty').textContent = row.dataset.facultyName;
+            document.getElementById('view_academic_year').textContent = row.dataset.academicYear;
         });
-    }
+    });
 
-    // Edit Modal
-    const editSubjectModalEl = document.getElementById('editSubjectModal');
-    if (editSubjectModalEl) {
-        // const editSubjectModal = new bootstrap.Modal(editSubjectModalEl); // Initialize if needed
-        const editSubjectForm = document.getElementById('editSubjectForm');
-        document.querySelectorAll('.edit-subject-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const courseCode = row.dataset.courseCode;
-                const subject = getSubjectByCourseCode(courseCode);
+    // --- Edit Subject Modal Logic ---
+    document.querySelectorAll('.edit-subject-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const courseCode = row.dataset.courseCode;
+            const subjectName = row.dataset.subjectName;
+            const facultyId = row.dataset.facultyId;
+            const academicYearId = row.dataset.academicYearId;
 
-                if (subject && editSubjectForm) {
-                    editSubjectForm.action = `/edit_subject/${subject.CourseCode}`;
-                    document.getElementById('edit_course_code_display').value = subject.CourseCode;
-                    document.getElementById('edit_subject_name').value = subject.SubjectName;
-                    
-                    const facultySelect = document.getElementById('edit_faculty_id');
-                    facultySelect.value = subject.FacultyID !== null ? subject.FacultyID : "None";
-                    
-                    const yearSelect = document.getElementById('edit_academic_year_id');
-                    yearSelect.value = subject.AcademicYearID !== null ? subject.AcademicYearID : "None";
-                }
-            });
+            document.getElementById('edit_course_code_display').value = courseCode;
+            document.getElementById('original_course_code').value = courseCode; // Store original PK
+            document.getElementById('edit_subject_name').value = subjectName;
+
+            // Set selected faculty in dropdown
+            const editFacultySelect = document.getElementById('edit_faculty_id');
+            editFacultySelect.value = facultyId || ''; // Set to actual ID or empty string for None/N/A
+
+            // Set selected academic year in dropdown
+            const editAcademicYearSelect = document.getElementById('edit_academic_year_id');
+            editAcademicYearSelect.value = academicYearId || ''; // Set to actual ID or empty string for None/N/A
+
+            // Set the form action dynamically
+            const editForm = document.getElementById('editSubjectForm');
+            editForm.action = `/edit_subject/${encodeURIComponent(courseCode)}`;
         });
-    }
-    
-    // Delete Modal
-    const deleteSubjectModalEl = document.getElementById('deleteSubjectModal');
-    if (deleteSubjectModalEl) {
-        // const deleteSubjectModal = new bootstrap.Modal(deleteSubjectModalEl); // Initialize if needed
-        const deleteSubjectForm = document.getElementById('deleteSubjectForm');
-        document.querySelectorAll('.delete-subject-btn').forEach(button => {
-            button.addEventListener('click', function() {
-                const row = this.closest('tr');
-                const courseCode = row.dataset.courseCode;
-                const subjectName = row.querySelector('.subject-name').textContent;
+    });
 
-                if (deleteSubjectForm) {
-                    deleteSubjectForm.action = `/delete_subject/${courseCode}`;
-                    document.getElementById('delete_subject_name_course_code').textContent = `${subjectName} (${courseCode})`;
-                }
-            });
+    // --- Delete Subject Modal Logic ---
+    document.querySelectorAll('.delete-subject-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const courseCode = row.dataset.courseCode;
+            const subjectName = row.dataset.subjectName;
+
+            document.getElementById('delete_subject_name_course_code').textContent = `${subjectName} (${courseCode})`;
+
+            // Set the form action dynamically
+            const deleteForm = document.getElementById('deleteSubjectForm');
+            deleteForm.action = `/delete_subject/${encodeURIComponent(courseCode)}`;
         });
+    });
+
+    // --- Search Bar Logic ---
+    window.filterTable = function() {
+        const input = document.getElementById('subjectSearch');
+        const filter = input.value.toUpperCase();
+        const table = document.getElementById('subjectTable');
+        const tr = table.getElementsByTagName('tr');
+
+        // Loop through all table rows, and hide those who don't match the search query
+        for (let i = 1; i < tr.length; i++) { // Start from 1 to skip the header row
+            const tdCourseCode = tr[i].getElementsByTagName('td')[0]; // Course Code column
+            const tdSubjectName = tr[i].getElementsByTagName('td')[1]; // Subject Name column
+            
+            if (tdCourseCode || tdSubjectName) {
+                const courseCodeText = tdCourseCode.textContent || tdCourseCode.innerText;
+                const subjectNameText = tdSubjectName.textContent || tdSubjectName.innerText;
+
+                if (courseCodeText.toUpperCase().indexOf(filter) > -1 || subjectNameText.toUpperCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }       
+        }
     }
 });
 </script>
