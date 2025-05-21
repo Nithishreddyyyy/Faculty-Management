@@ -31,8 +31,7 @@
                     </li>
                     <li class="nav-item">
                         {# Assuming 'activities' is the endpoint name for the Activities page #}
-                        <a class="nav-link {% if active_page == 'activities' %}active{% endif %}" href="{{ url_for('activities') if 'activities' in config['ROUTES'] else '#' }}"><i class="bi bi-calendar-event"></i> Activities</a>
-                    </li>
+                        <a class="nav-link {% if active_page == 'activities' %}active{% endif %}" href="{{ url_for('activities_view') }}"><i class="bi bi-calendar-event"></i> Activities</a>                    </li>
                     <li class="nav-item">
                         <a class="nav-link {% if active_page == 'subjects' %}active{% endif %}" href="{{ url_for('subjects_view') }}"><i class="bi bi-book"></i> Subjects</a>
                     </li>

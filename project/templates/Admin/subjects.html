@@ -1,9 +1,9 @@
 {% extends "Admin/base.html" %}
 
-{% block title %}Subject Management - Faculty Management System{% endblock %}
+{% block title %}Subjects - Faculty Management System{% endblock %}
 
 {% block content %}
-{% set active_page = 'subjects' %} {# This helps base.html set the active nav link #}
+{% set active_page = 'subjects' %}
 
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -14,13 +14,37 @@
     </div>
 </div>
 
-<!-- (Optional: Filters and Search - similar to faculty.html if needed) -->
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<!-- Filters and Search (Optional - can be added later if needed) -->
+<!-- 
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" id="subjectSearch" placeholder="Search subjects (Code, Name)...">
+            </div>
+            Add more filters if needed
+        </div>
+    </div>
+</div>
+-->
 
 <!-- Subject List -->
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0" id="subjectTable">
                 <thead class="table-light">
                     <tr>
                         <th>Course Code</th>
@@ -31,44 +55,56 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if subject_list %}
-                        {% for subject_item in subject_list %} {# Renamed to avoid conflict #}
-                        <tr>
-                            <td>{{ subject_item.CourseCode }}</td>
-                            <td>{{ subject_item.SubjectName }}</td>
-                            <td>
-                                {% if subject_item.assigned_faculty %}
-                                    {{ subject_item.assigned_faculty.FirstName }} {{ subject_item.assigned_faculty.LastName or '' }}
-                                {% else %}
-                                    <span class="text-muted">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if subject_item.academic_year_info %}
-                                    {{ subject_item.academic_year_info.YearStart }} - {{ subject_item.academic_year_info.YearEnd }}
-                                {% else %}
-                                    <span class="text-muted">N/A</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary" title="View Details"><i class="bi bi-eye"></i></button>
-                                    <button type="button" class="btn btn-outline-secondary" title="Edit Subject"><i class="bi bi-pencil"></i></button>
-                                    <button type="button" class="btn btn-outline-danger" title="Delete Subject"><i class="bi bi-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center">No subjects found.</td>
+                    {% for subject in subject_list %}
+                    <tr data-course-code="{{ subject.CourseCode }}">
+                        <td>{{ subject.CourseCode }}</td>
+                        <td class="subject-name">{{ subject.SubjectName }}</td>
+                        <td>
+                            {% if subject.assigned_faculty %}
+                                {{ subject.assigned_faculty.FirstName }} {{ subject.assigned_faculty.LastName }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if subject.academic_year_info %}
+                                {{ subject.academic_year_info.YearStart }} - {{ subject.academic_year_info.YearEnd }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary view-subject-btn" title="View Details"
+                                        data-bs-toggle="modal" data-bs-target="#viewSubjectModal">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary edit-subject-btn" title="Edit Subject"
+                                        data-bs-toggle="modal" data-bs-target="#editSubjectModal">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger delete-subject-btn" title="Delete Subject"
+                                        data-bs-toggle="modal" data-bs-target="#deleteSubjectModal">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
-                    {% endif %}
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-    <!-- (Optional: Pagination - similar to faculty.html if needed) -->
+    <!-- Pagination (Static for now) -->
+    <div class="card-footer bg-white">
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item disabled"><a class="page-link" href="#">Previous</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">Next</a></li>
+            </ul>
+        </nav>
+    </div>
 </div>
 
 <!-- Add Subject Modal -->
@@ -81,33 +117,31 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="course_code" class="form-label">Course Code</label>
-                            <input type="text" class="form-control" id="course_code" name="course_code" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="subject_name" class="form-label">Subject Name</label>
-                            <input type="text" class="form-control" id="subject_name" name="subject_name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="faculty_id" class="form-label">Assign Faculty</label>
-                            <select class="form-select" id="faculty_id" name="faculty_id">
-                                <option value="">Unassigned</option>
-                                {% for fac in faculties %}
-                                <option value="{{ fac.ID }}">{{ fac.FirstName }} {{ fac.LastName or '' }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="academic_year_id" class="form-label">Academic Year</label>
-                            <select class="form-select" id="academic_year_id" name="academic_year_id">
-                                <option value="">Not Specific</option>
-                                {% for ay in academic_years %}
-                                <option value="{{ ay.ID }}">{{ ay.YearStart }} - {{ ay.YearEnd }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
+                    <div class="mb-3">
+                        <label for="add_course_code" class="form-label">Course Code</label>
+                        <input type="text" class="form-control" id="add_course_code" name="course_code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_subject_name" class="form-label">Subject Name</label>
+                        <input type="text" class="form-control" id="add_subject_name" name="subject_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_faculty_id" class="form-label">Assign Faculty</label>
+                        <select class="form-select" id="add_faculty_id" name="faculty_id">
+                            <option value="">None</option>
+                            {% for faculty_member in faculties %}
+                            <option value="{{ faculty_member.ID }}">{{ faculty_member.FirstName }} {{ faculty_member.LastName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_academic_year_id" class="form-label">Academic Year</label>
+                        <select class="form-select" id="add_academic_year_id" name="academic_year_id">
+                            <option value="">None</option>
+                            {% for year in academic_years %}
+                            <option value="{{ year.ID }}">{{ year.YearStart }} - {{ year.YearEnd }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -118,4 +152,175 @@
         </div>
     </div>
 </div>
+
+<!-- View Subject Modal -->
+<div class="modal fade" id="viewSubjectModal" tabindex="-1" aria-labelledby="viewSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewSubjectModalLabel">Subject Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-bordered">
+                    <tr><th style="width: 30%;">Course Code</th><td id="view_course_code"></td></tr>
+                    <tr><th>Subject Name</th><td id="view_subject_name"></td></tr>
+                    <tr><th>Assigned Faculty</th><td id="view_assigned_faculty"></td></tr>
+                    <tr><th>Academic Year</th><td id="view_academic_year"></td></tr>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal fade" id="editSubjectModal" tabindex="-1" aria-labelledby="editSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="editSubjectForm"> {# Action will be set by JS #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSubjectModalLabel">Edit Subject</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_course_code_display" class="form-label">Course Code</label>
+                        <input type="text" class="form-control" id="edit_course_code_display" name="edit_course_code_display" readonly>
+                        {# Course code is PK, typically not edited. If it is, a hidden field might be needed for the original PK #}
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_subject_name" class="form-label">Subject Name</label>
+                        <input type="text" class="form-control" id="edit_subject_name" name="edit_subject_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_faculty_id" class="form-label">Assign Faculty</label>
+                        <select class="form-select" id="edit_faculty_id" name="edit_faculty_id">
+                            <option value="None">None</option> {# Use "None" as string value for no selection #}
+                            {% for faculty_member in faculties %}
+                            <option value="{{ faculty_member.ID }}">{{ faculty_member.FirstName }} {{ faculty_member.LastName }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_academic_year_id" class="form-label">Academic Year</label>
+                        <select class="form-select" id="edit_academic_year_id" name="edit_academic_year_id">
+                            <option value="None">None</option> {# Use "None" as string value for no selection #}
+                            {% for year in academic_years %}
+                            <option value="{{ year.ID }}">{{ year.YearStart }} - {{ year.YearEnd }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Subject Modal -->
+<div class="modal fade" id="deleteSubjectModal" tabindex="-1" aria-labelledby="deleteSubjectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="deleteSubjectForm"> {# Action will be set by JS #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteSubjectModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete subject: <strong id="delete_subject_name_course_code"></strong>?</p>
+                    <p class="text-danger">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Subject</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Store subject data (passed from Flask as JSON)
+    const subjectDataStore = {{ subject_list_json | tojson | safe }};
+
+    function getSubjectByCourseCode(courseCode) {
+        return subjectDataStore.find(sub => sub.CourseCode === courseCode);
+    }
+
+    // View Modal
+    const viewSubjectModalEl = document.getElementById('viewSubjectModal');
+    if (viewSubjectModalEl) {
+        // const viewSubjectModal = new bootstrap.Modal(viewSubjectModalEl); // Initialize if needed, or rely on data-bs-toggle
+        document.querySelectorAll('.view-subject-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const courseCode = row.dataset.courseCode;
+                const subject = getSubjectByCourseCode(courseCode);
+
+                if (subject) {
+                    document.getElementById('view_course_code').textContent = subject.CourseCode;
+                    document.getElementById('view_subject_name').textContent = subject.SubjectName;
+                    document.getElementById('view_assigned_faculty').textContent = subject.FacultyName || 'N/A';
+                    document.getElementById('view_academic_year').textContent = subject.AcademicYear || 'N/A';
+                }
+            });
+        });
+    }
+
+    // Edit Modal
+    const editSubjectModalEl = document.getElementById('editSubjectModal');
+    if (editSubjectModalEl) {
+        // const editSubjectModal = new bootstrap.Modal(editSubjectModalEl); // Initialize if needed
+        const editSubjectForm = document.getElementById('editSubjectForm');
+        document.querySelectorAll('.edit-subject-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const courseCode = row.dataset.courseCode;
+                const subject = getSubjectByCourseCode(courseCode);
+
+                if (subject && editSubjectForm) {
+                    editSubjectForm.action = `/edit_subject/${subject.CourseCode}`;
+                    document.getElementById('edit_course_code_display').value = subject.CourseCode;
+                    document.getElementById('edit_subject_name').value = subject.SubjectName;
+                    
+                    const facultySelect = document.getElementById('edit_faculty_id');
+                    facultySelect.value = subject.FacultyID !== null ? subject.FacultyID : "None";
+                    
+                    const yearSelect = document.getElementById('edit_academic_year_id');
+                    yearSelect.value = subject.AcademicYearID !== null ? subject.AcademicYearID : "None";
+                }
+            });
+        });
+    }
+    
+    // Delete Modal
+    const deleteSubjectModalEl = document.getElementById('deleteSubjectModal');
+    if (deleteSubjectModalEl) {
+        // const deleteSubjectModal = new bootstrap.Modal(deleteSubjectModalEl); // Initialize if needed
+        const deleteSubjectForm = document.getElementById('deleteSubjectForm');
+        document.querySelectorAll('.delete-subject-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const row = this.closest('tr');
+                const courseCode = row.dataset.courseCode;
+                const subjectName = row.querySelector('.subject-name').textContent;
+
+                if (deleteSubjectForm) {
+                    deleteSubjectForm.action = `/delete_subject/${courseCode}`;
+                    document.getElementById('delete_subject_name_course_code').textContent = `${subjectName} (${courseCode})`;
+                }
+            });
+        });
+    }
+});
+</script>
 {% endblock %}

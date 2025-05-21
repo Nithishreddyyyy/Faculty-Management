@@ -1,0 +1,11 @@
+
+{% extends "Admin/base.html" %}
+{% block title %}Faculty Detail Placeholder{% endblock %}
+{% block content %}
+    <h2>Faculty Detail for {{ faculty_member.FirstName }} {{ faculty_member.LastName }}</h2>
+    <p>This is a placeholder page for viewing faculty details directly via URL.</p>
+    <p>ID: {{ faculty_member.ID }}</p>
+    <p>Email: {{ faculty_member.Email }}</p>
+    <a href="{{ url_for('faculty') }}">Back to Faculty List</a>
+{% endblock %}
+            
