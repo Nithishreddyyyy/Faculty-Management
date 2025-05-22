@@ -5,7 +5,7 @@ from datetime import datetime
 import os
 
 # Testing
-fac_id=18
+fac_id=1
 
 app = Flask(__name__)
 app.secret_key = "Ramaiah Institute of Technology"
