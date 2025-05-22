@@ -4,9 +4,8 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 
-# Remove TEST_FACULTY_ID from global scope or use it only as a development fallback
-# For dynamic faculty views, it's better to pass ID via URL or session
-# TEST_FACULTY_ID = 1 # Consider removing this if you're going fully dynamic
+# Testing
+fac_id=18
 
 app = Flask(__name__)
 app.secret_key = "Ramaiah Institute of Technology"
@@ -80,35 +79,66 @@ class Subject(db.Model):
 # Routes -- Admin Views
 @app.route('/')
 def index():
+    # Get counts for dashboard cards
     faculty_count = Faculty.query.count()
     activity_count = Activity.query.count()
     subject_count = Subject.query.count()
-    current_year = datetime.now().year
+    current_year = datetime.now().year # Displaying just the year
 
-    recent_activities_result = db.session.query(
-        Activity.Title,
-        Activity.Date,
-        ActivityType.Category.label('activity_type'),
-        Faculty.FirstName,
-        Faculty.LastName
+    # Query for recent activities, now including ALL necessary data for modals
+    recent_activities_raw = db.session.query(
+        Activity.ID.label('ID'),
+        Activity.Name.label('Name'), # Crucial: Added Activity.Name
+        Activity.Title.label('Title'),
+        Activity.Date.label('Date'),
+        Activity.Description.label('Description'), # Crucial: Added Activity.Description
+        Activity.ActivityTypeID.label('ActivityTypeID'), # Crucial: Added for edit modal
+        Activity.FacultyID.label('FacultyID'), # Crucial: Added for edit modal
+        Activity.AcademicYearID.label('AcademicYearID'), # Crucial: Added for edit modal
+        ActivityType.Name.label('activity_type'), # Using Name from ActivityType for display
+        Faculty.FirstName.label('faculty_first_name'),
+        Faculty.LastName.label('faculty_last_name'),
+        AcademicYear.YearStart.label('academic_year_start'), # Crucial: Added AcademicYear details
+        AcademicYear.YearEnd.label('academic_year_end')      # Crucial: Added AcademicYear details
     ).join(ActivityType, Activity.ActivityTypeID == ActivityType.ID) \
      .join(Faculty, Activity.FacultyID == Faculty.ID) \
+     .join(AcademicYear, Activity.AcademicYearID == AcademicYear.ID) \
      .order_by(Activity.Date.desc()).limit(5).all()
 
-    faculty_list = Faculty.query.limit(10).all()
+    # Format raw results into a list of dictionaries with all required keys
+    formatted_recent_activities = []
+    for r in recent_activities_raw:
+        formatted_recent_activities.append({
+            'ID': r.ID,
+            'Name': r.Name, # Now available
+            'Title': r.Title,
+            'Date': r.Date,
+            'Description': r.Description, # Now available
+            'ActivityTypeID': r.ActivityTypeID, # Now available
+            'FacultyID': r.FacultyID, # Now available
+            'AcademicYearID': r.AcademicYearID, # Now available
+            'activity_type': r.activity_type,
+            'faculty_name': f"{r.faculty_first_name} {r.faculty_last_name}",
+            'academic_year': f"{r.academic_year_start}-{r.academic_year_end}" # Now available
+        })
+
+    # Fetch lists for dropdowns in modals (Add/Edit Activity/Faculty)
+    faculty_list_for_table = Faculty.query.limit(10).all() # For the faculty table on dashboard
+    activity_types = ActivityType.query.all()
+    faculties = Faculty.query.all() # For faculty dropdown in activity modals
+    academic_years = AcademicYear.query.all()
+
 
     return render_template('Admin/index.html',
         faculty_count=faculty_count,
         activity_count=activity_count,
         subject_count=subject_count,
         current_year=current_year,
-        recent_activities=[{
-            'Title': a.Title,
-            'Date': a.Date,
-            'activity_type': a.activity_type,
-            'faculty_name': f"{a.FirstName} {a.LastName}"
-        } for a in recent_activities_result],
-        faculty_list=faculty_list
+        recent_activities=formatted_recent_activities, # Pass the fully formatted list
+        faculty_list=faculty_list_for_table, # Pass the faculty list for the table
+        activity_types=activity_types, # Needed for modals
+        faculties=faculties,           # Needed for modals
+        academic_years=academic_years  # Needed for modals
     )
 
 @app.route('/faculty')
@@ -295,7 +325,7 @@ def appraisals():
 @app.route('/facultydashboard')
 def facultydashboard():
     # Retrieve faculty ID from query parameter, with a fallback for testing
-    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    faculty_id = request.args.get('faculty_id', type=int, default=fac_id) # Default to 1 for easier testing
     
     faculty = db.session.get(Faculty, faculty_id) 
     
@@ -357,7 +387,7 @@ def facultydashboard():
 @app.route('/profile', methods=['GET', 'POST'])
 def profile():
     # Retrieve faculty ID from query parameter, with a fallback for testing
-    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    faculty_id = request.args.get('faculty_id', type=int, default=fac_id) # Default to 1 for easier testing
     
     faculty = db.session.get(Faculty, faculty_id) 
     
@@ -385,7 +415,7 @@ def profile():
 @app.route('/subject')
 def subjects():
     # Retrieve faculty ID from query parameter, with a fallback for testing
-    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    faculty_id = request.args.get('faculty_id', type=int, default=fac_id) # Default to 1 for easier testing
     
     faculty = db.session.get(Faculty, faculty_id) 
     
@@ -400,7 +430,7 @@ def subjects():
 @app.route('/activity')
 def activity():
     # Retrieve faculty ID from query parameter, with a fallback for testing
-    faculty_id = request.args.get('faculty_id', type=int, default=1) # Default to 1 for easier testing
+    faculty_id = request.args.get('faculty_id', type=int, default=fac_id) # Default to 1 for easier testing
     
     faculty = db.session.get(Faculty, faculty_id)
     
@@ -431,7 +461,7 @@ def add_activity():
     faculty_id = request.form.get('faculty_id', type=int) 
     if not faculty_id:
         # Fallback for direct access or missing form field during testing
-        faculty_id = request.args.get('faculty_id', type=int, default=1) 
+        faculty_id = request.args.get('faculty_id', type=int, default=fac_id) 
         if not faculty_id:
             flash("Faculty ID is missing for adding activity.", 'danger')
             return redirect(url_for('index'))
@@ -462,7 +492,7 @@ def edit_activity(id):
     faculty_id = request.form.get('faculty_id', type=int)
     if not faculty_id:
         # Fallback for direct access or missing form field during testing
-        faculty_id = request.args.get('faculty_id', type=int, default=1)
+        faculty_id = request.args.get('faculty_id', type=int, default=fac_id)
         if not faculty_id:
             flash("Faculty ID is missing for editing activity.", 'danger')
             return redirect(url_for('index'))

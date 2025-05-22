@@ -93,17 +93,17 @@
                 <tbody>
                     {% for activity in recent_activities %}
                     <tr data-activity-id="{{ activity.ID }}"
-                        data-activity-name="{{ activity.Name }}"
+                        data-activity-name="{{ activity.Name }}" {# Now correctly populated from app.py #}
                         data-activity-title="{{ activity.Title }}"
                         data-activity-date="{{ activity.Date | format_date_for_input }}"
-                        data-activity-description="{{ activity.Description }}"
-                        data-activity-type-id="{{ activity.ActivityTypeID }}"
-                        data-faculty-id="{{ activity.FacultyID }}"
-                        data-academic-year-id="{{ activity.AcademicYearID }}"
+                        data-activity-description="{{ activity.Description }}" {# Now correctly populated #}
+                        data-activity-type-id="{{ activity.ActivityTypeID }}" {# Now correctly populated #}
+                        data-faculty-id="{{ activity.FacultyID }}" {# Now correctly populated #}
+                        data-academic-year-id="{{ activity.AcademicYearID }}" {# Now correctly populated #}
                         data-faculty-name="{{ activity.faculty_name }}"
                         data-activity-type="{{ activity.activity_type }}"
-                        data-academic-year="{{ activity.academic_year }}">
-                        <td>{{ activity.Title }}</td>
+                        data-academic-year="{{ activity.academic_year }}"> {# Now correctly populated #}
+                        <td>{{ activity.Title }}</td> {# Displaying Title in the table column #}
                         <td>{{ activity.faculty_name }}</td>
                         <td><span class="badge bg-info">{{ activity.activity_type }}</span></td>
                         <td>{{ activity.Date.strftime('%d-%m-%Y') }}</td>
@@ -143,7 +143,7 @@
                         <th>Email</th>
                         <th>Actions</th>
                     </tr>
-</thead>
+                </thead>
                 <tbody>
                     {% for faculty_member in faculty_list %} {# Renamed to avoid conflict with faculty route name #}
                     <tr data-faculty-id="{{ faculty_member.ID }}"
@@ -184,6 +184,7 @@
     </div>
 </div>
 
+{# --- Activity Modals --- #}
 <div class="modal fade" id="viewActivityModal" tabindex="-1" aria-labelledby="viewActivityModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -193,7 +194,9 @@
             </div>
             <div class="modal-body">
                 <table class="table table-bordered">
+                    {# Corrected to display activity Name #}
                     <tr><th style="width: 30%;">Activity Name</th><td id="view_activity_name_title"></td></tr>
+                    {# Corrected to display activity Title #}
                     <tr><th>Activity Title</th><td id="view_activity_title"></td></tr>
                     <tr><th>Date</th><td id="view_activity_date"></td></tr>
                     <tr><th>Type</th><td id="view_activity_type"></td></tr>
@@ -269,7 +272,7 @@
     </div>
 </div>
 
-
+{# --- Faculty Modals --- #}
 <div class="modal fade" id="addFacultyModal" tabindex="-1" aria-labelledby="addFacultyModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -463,6 +466,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.view-activity-btn').forEach(button => {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
+            // Populate the "View Activity" modal with data from the clicked row's data attributes
             document.getElementById('view_activity_name_title').textContent = row.dataset.activityName;
             document.getElementById('view_activity_title').textContent = row.dataset.activityTitle;
             document.getElementById('view_activity_date').textContent = row.dataset.activityDate;
@@ -478,17 +482,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = this.closest('tr');
             const activityId = row.dataset.activityId;
 
+            // Populate the "Edit Activity" modal form fields
             document.getElementById('edit_activity_id').value = activityId;
             document.getElementById('edit_activity_name').value = row.dataset.activityName;
             document.getElementById('edit_activity_title').value = row.dataset.activityTitle;
             document.getElementById('edit_activity_date').value = row.dataset.activityDate;
             document.getElementById('edit_activity_description').value = row.dataset.activityDescription;
+
+            // Set dropdowns
             document.getElementById('edit_activity_type_id').value = row.dataset.activityTypeId;
             document.getElementById('edit_activity_faculty_id').value = row.dataset.facultyId;
             document.getElementById('edit_activity_academic_year_id').value = row.dataset.academicYearId;
 
+            // Set the form action dynamically for the specific activity being edited
             const editForm = document.getElementById('editActivityForm');
-            editForm.action = `/edit_admin_activity/${activityId}`;
+            editForm.action = `/edit_admin_activity/${activityId}`; // Ensure this URL matches your Flask route
         });
     });
 
@@ -496,6 +504,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.view-faculty-btn').forEach(button => {
         button.addEventListener('click', function() {
             const row = this.closest('tr');
+            // Populate the "View Faculty" modal with data
             document.getElementById('view_faculty_name').textContent = `${row.dataset.firstName} ${row.dataset.lastName}`;
             document.getElementById('view_faculty_dob').textContent = row.dataset.dob;
             document.getElementById('view_faculty_email').textContent = row.dataset.email;
@@ -512,6 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = this.closest('tr');
             const facultyId = row.dataset.facultyId;
 
+            // Populate the "Edit Faculty" modal form fields
             document.getElementById('edit_faculty_id').value = facultyId;
             document.getElementById('edit_faculty_first_name').value = row.dataset.firstName;
             document.getElementById('edit_faculty_last_name').value = row.dataset.lastName;
@@ -519,12 +529,16 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('edit_faculty_email').value = row.dataset.email;
             document.getElementById('edit_faculty_phone').value = row.dataset.phone;
             document.getElementById('edit_faculty_phone1').value = row.dataset.phone1;
+
+            // Set dropdowns
             document.getElementById('edit_faculty_department').value = row.dataset.department;
             document.getElementById('edit_faculty_designation').value = row.dataset.designation;
+
             document.getElementById('edit_faculty_join_date').value = row.dataset.joinDate;
 
+            // Set the form action dynamically for the specific faculty being edited
             const editForm = document.getElementById('editFacultyForm');
-            editForm.action = `/edit_faculty/${facultyId}`;
+            editForm.action = `/edit_faculty/${facultyId}`; // Ensure this URL matches your Flask route
         });
     });
 
@@ -534,10 +548,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const facultyId = row.dataset.facultyId;
             const fullName = `${row.dataset.firstName} ${row.dataset.lastName}`;
 
+            // Populate the "Delete Faculty" confirmation modal
             document.getElementById('delete_faculty_name').textContent = fullName;
-            
+
+            // Set the form action dynamically for the specific faculty to be deleted
             const deleteForm = document.getElementById('deleteFacultyForm');
-            deleteForm.action = `/delete_faculty/${facultyId}`;
+            deleteForm.action = `/delete_faculty/${facultyId}`; // Ensure this URL matches your Flask route
         });
     });
 });
