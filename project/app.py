@@ -106,7 +106,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == 'admin' and password == 'admin':
+        if username == 'admin' and password == 'admin':     #hard coded the password 
             session['user_id'] = 'admin'
             session['user_type'] = 'admin'
             return redirect(url_for('index'))
