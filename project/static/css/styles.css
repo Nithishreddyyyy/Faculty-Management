@@ -85,3 +85,22 @@
 footer {
     border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
+/* Add these styles for login page */
+body {
+    background-color: #f8f9fa;
+}
+
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    padding: 10px;
+}
