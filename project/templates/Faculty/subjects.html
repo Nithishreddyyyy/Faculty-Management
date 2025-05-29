@@ -12,40 +12,54 @@
     <!-- Filter Dropdown -->
     <div class="row mb-4">
         <div class="col-md-4">
-            <label for="academicYear" class="form-label fw-semibold"><i class="bi bi-calendar-range me-1"></i>Filter by Academic Year:</label>
-            <select id="academicYear" class="form-select">
+            <label for="academicYearFilter" class="form-label fw-semibold"><i class="bi bi-calendar-range me-1"></i>Filter by Academic Year:</label>
+            <select id="academicYearFilter" class="form-select">
                 <option value="all" selected>All Years</option>
-                <option value="2024-2025">2024-2025</option>
-                <option value="2023-2024">2023-2024</option>
-                <!-- Dynamically add more years as needed -->
+                {# Dynamically populate filter options from the subjects data #}
+                {% set unique_years_list = [] %}
+                {% for sub_info in subjects %}
+                    {% if sub_info.AcademicYear not in unique_years_list %}
+                        {% set _ = unique_years_list.append(sub_info.AcademicYear) %}
+                    {% endif %}
+                {% endfor %}
+                {% for year_display in unique_years_list|sort(reverse=True) %}
+                    <option value="{{ year_display }}">{{ year_display }}</option>
+                {% endfor %}
             </select>
         </div>
     </div>
 
     <!-- Subjects List -->
     <div class="row g-4" id="subjectsContainer">
-        {% for subject, year in subjects %}
-        <div class="col-md-6 subject-card" data-year="{{ year.YearStart }}-{{ year.YearEnd }}">
+        {# CORRECTED LOOP: 'sub_info' is a dictionary from formatted_subjects #}
+        {% for sub_info in subjects %}
+        <div class="col-md-6 subject-card" data-year="{{ sub_info.AcademicYear }}"> {# Use AcademicYear directly from dict #}
             <div class="card border-0 shadow-sm rounded-4 h-100 hover-shadow">
                 <div class="card-body">
                     <h5 class="card-title fw-bold text-primary mb-2">
-                        <i class="bi bi-journal-code me-2"></i>{{ subject.SubjectName }}
-                        <span class="badge bg-light text-dark float-end">{{ subject.CourseCode }}</span>
+                        <i class="bi bi-journal-code me-2"></i>{{ sub_info.SubjectName }}
+                        <span class="badge bg-light text-dark float-end">{{ sub_info.CourseCode }}</span>
                     </h5>
-                    <p class="text-muted mb-1"><i class="bi bi-calendar-week me-1"></i>Academic Year: {{ year.YearStart }} - {{ year.YearEnd }}</p>
-                    <p class="text-muted mb-1"><i class="bi bi-mortarboard me-1"></i>Semester: {{ subject.Semester }}</p>
-                    <p class="card-text mt-2">This subject, identified by course code {{ subject.CourseCode }}, provides insight into key concepts and is part of the {{ subject.Semester }} semester curriculum.</p>
-                    <small class="text-muted"><i class="bi bi-person-badge me-1"></i> Taught by: Prof. John Doe</small>
+                    <p class="text-muted mb-1"><i class="bi bi-calendar-week me-1"></i>Academic Year: {{ sub_info.AcademicYear }}</p>
+                    <p class="text-muted mb-1"><i class="bi bi-mortarboard me-1"></i>Semester: {{ sub_info.Semester if sub_info.Semester else 'N/A' }}</p>
+                    <p class="card-text mt-2">This subject, identified by course code {{ sub_info.CourseCode }}, provides insight into key concepts and is part of the {{ sub_info.Semester if sub_info.Semester else 'N/A' }} semester curriculum.</p>
+                    {# To display faculty name, you'd need to pass it in the dictionary from app.py or query it if Subject has a direct faculty relationship #}
+                    {# <small class="text-muted"><i class="bi bi-person-badge me-1"></i> Taught by: Prof. John Doe</small> #}
                 </div>
             </div>
         </div>
         {% else %}
-        <div class="col-12">
+        <div class="col-12" id="initialNoSubjectsMessage">
             <div class="alert alert-info rounded-4 shadow-sm" role="alert">
-                <i class="bi bi-info-circle me-2"></i>No subjects found for the selected year.
+                <i class="bi bi-info-circle me-2"></i>You are not currently assigned to any subjects.
             </div>
         </div>
         {% endfor %}
+        <div class="col-12" id="filterNoSubjectsMessage" style="display: none;">
+             <div class="alert alert-info rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-info-circle me-2"></i>No subjects found for the selected year.
+            </div>
+        </div>
     </div>
 </div>
 
@@ -61,42 +75,40 @@
 <!-- JavaScript to filter subjects -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const filterSelect = document.getElementById('academicYear');
+    const filterSelect = document.getElementById('academicYearFilter');
     const subjectCards = document.querySelectorAll('.subject-card');
+    const filterNoSubjectsMessageDiv = document.getElementById('filterNoSubjectsMessage');
+    const initialNoSubjectsMessageDiv = document.getElementById('initialNoSubjectsMessage');
 
-    filterSelect.addEventListener('change', () => {
-        const selectedYear = filterSelect.value;
+    if (filterSelect && subjectCards.length > 0) { 
+        filterSelect.addEventListener('change', () => {
+            const selectedYear = filterSelect.value;
+            let anyVisible = false;
 
-        let anyVisible = false;
+            subjectCards.forEach(card => {
+                const cardYear = card.getAttribute('data-year'); // This now matches the 'AcademicYear' string
+                if (selectedYear === 'all' || cardYear === selectedYear) {
+                    card.style.display = '';
+                    anyVisible = true;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
 
-        subjectCards.forEach(card => {
-            const cardYear = card.getAttribute('data-year');
-
-            if (selectedYear === 'all' || cardYear === selectedYear) {
-                card.style.display = '';
-                anyVisible = true;
-            } else {
-                card.style.display = 'none';
+            if (filterNoSubjectsMessageDiv) {
+                if (!anyVisible) {
+                    filterNoSubjectsMessageDiv.style.display = ''; 
+                } else {
+                    filterNoSubjectsMessageDiv.style.display = 'none'; 
+                }
+            }
+            if(initialNoSubjectsMessageDiv) { 
+                initialNoSubjectsMessageDiv.style.display = 'none';
             }
         });
-
-        // Show alert if no subjects visible
-        let alertEl = document.getElementById('noSubjectsAlert');
-        if (!anyVisible) {
-            if (!alertEl) {
-                alertEl = document.createElement('div');
-                alertEl.id = 'noSubjectsAlert';
-                alertEl.className = 'col-12';
-                alertEl.innerHTML = `
-                    <div class="alert alert-info rounded-4 shadow-sm" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>No subjects found for the selected year.
-                    </div>`;
-                document.getElementById('subjectsContainer').appendChild(alertEl);
-            }
-        } else if (alertEl) {
-            alertEl.remove();
-        }
-    });
+    } else if (subjectCards.length === 0 && initialNoSubjectsMessageDiv) {
+        // No action needed, initial message is already shown by Jinja
+    }
 });
 </script>
 {% endblock %}
