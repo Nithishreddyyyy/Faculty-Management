@@ -1,21 +1,36 @@
 {% extends './Faculty/base.html' %}
+
+{% block title %}Your Activities | FacultyHub{% endblock %}
+
 {% block content %}
 <div class="container mt-5">
     <h2><i class="bi bi-list-check"></i> Your Activities</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
     <div class="card shadow-sm p-3 my-4">
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <strong>Filters:</strong>
             <select id="filterAcademicYear" class="form-select w-auto" aria-label="Academic Year Filter">
                 <option value="all" selected>All Academic Years</option>
-                {% for year in academic_years %}
+                {% for year in academic_years %} {# These are passed for dropdowns from app.py #}
                     <option value="{{ year.ID }}">{{ year.YearStart }}-{{ year.YearEnd }}</option>
                 {% endfor %}
             </select>
 
             <select id="filterActivityType" class="form-select w-auto" aria-label="Activity Type Filter">
                 <option value="all" selected>All Activity Types</option>
-                {% for type in activity_types %}
+                {% for type in activity_types %} {# These are passed for dropdowns from app.py #}
                     <option value="{{ type.ID }}">{{ type.Name }}</option>
                 {% endfor %}
             </select>
@@ -29,34 +44,59 @@
     </div>
 
     <div class="row g-3" id="activitiesContainer">
-        {% for activity, type_name, category, year_start, year_end in activities %}
-        <div class="col-md-6 activity-card" data-year="{{ activity.AcademicYearID }}" data-type="{{ activity.ActivityTypeID }}">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-easel2-fill"></i> {{ activity.Name }}</h5>
-                    <span class="badge bg-light text-dark float-end">{{ activity.Date.strftime('%d/%m/%Y') }}</span>
-                    <p><i class="bi bi-info-circle"></i> <a href="#">{{ activity.Title }}</a></p>
-                    <p>
-                        <i class="bi bi-tags"></i>
-                        <span class="text-primary">Type:</span> {{ type_name }} ({{ category }})<br>
-                        <i class="bi bi-calendar3"></i>
-                        <span class="text-primary">Academic Year:</span> {{ year_start }}-{{ year_end }}
-                    </p>
-                    {% if activity.Description %}
-                    <p class="text-muted">{{ activity.Description }}</p>
-                    {% endif %}
-                </div>
-                <div class="card-footer text-end">
-                    <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editActivityModal{{ activity.ID }}">
-                        <i class="bi bi-pencil-square"></i> Edit
-                    </button>
+        {# CORRECTED LOOP: 'act' is a single Activity object #}
+        {% for act in activities %} 
+        <div class="col-md-6 activity-card" data-year="{{ act.AcademicYearID }}" data-type="{{ act.ActivityTypeID }}">
+            <div class="card shadow-sm h-100"> {# Added h-100 for consistent card height #}
+                <div class="card-body d-flex flex-column"> {# Flex column for footer #}
+                    <div>
+                        <h5 class="card-title"><i class="bi bi-easel2-fill"></i> {{ act.Name }}</h5>
+                        <span class="badge bg-light text-dark float-end mb-2">{{ act.Date.strftime('%d %b %Y') if act.Date else 'N/A' }}</span>
+                        <p class="card-subtitle mb-2 text-muted">{{ act.Title }}</p>
+                        <p class="small">
+                            <i class="bi bi-tags"></i>
+                            <strong>Type:</strong> 
+                            {{ act.activity_type_info.Name if act.activity_type_info else 'N/A' }}
+                            {% if act.activity_type_info and act.activity_type_info.Category %}
+                             ({{ act.activity_type_info.Category }})
+                            {% endif %}
+                            <br>
+                            <i class="bi bi-calendar3"></i>
+                            <strong>Academic Year:</strong> 
+                            {% if act.academic_year_info %}
+                                {{ act.academic_year_info.YearStart }}-{{ act.academic_year_info.YearEnd }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </p>
+                        {% if act.Description %}
+                        <p class="card-text small mt-2">{{ act.Description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="mt-auto text-end pt-2"> {# mt-auto pushes footer to bottom #}
+                        <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editActivityModal{{ act.ID }}">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+        {% else %}
+        <div class="col-12" id="initialNoActivitiesMessage">
+            <div class="alert alert-info rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-info-circle me-2"></i>You have not added any activities yet.
+            </div>
+        </div>
         {% endfor %}
+        <div class="col-12" id="filterNoActivitiesMessage" style="display: none;">
+             <div class="alert alert-info rounded-4 shadow-sm" role="alert">
+                <i class="bi bi-info-circle me-2"></i>No activities found for the selected filters.
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Add Activity Modal -->
 <div class="modal fade" id="addActivityModal" tabindex="-1" aria-labelledby="addActivityModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -66,36 +106,34 @@
             </div>
             <form action="{{ url_for('add_activity') }}" method="POST">
                 <div class="modal-body">
-                    <input type="hidden" name="faculty_id" value="{{ current_faculty_id }}"> 
-
                     <div class="mb-3">
-                        <label for="activityName" class="form-label">Activity Name</label>
-                        <input type="text" class="form-control" id="activityName" name="activity_name" required>
+                        <label for="add_activityName" class="form-label">Activity Name</label> {# Changed ID for uniqueness #}
+                        <input type="text" class="form-control" id="add_activityName" name="activity_name" required>
                     </div>
                     <div class="mb-3">
-                        <label for="activityTitle" class="form-label">Title</label>
-                        <input type="text" class="form-control" id="activityTitle" name="title" required>
+                        <label for="add_activityTitle" class="form-label">Title</label> {# Changed ID for uniqueness #}
+                        <input type="text" class="form-control" id="add_activityTitle" name="title" required>
                     </div>
                     <div class="mb-3">
-                        <label for="activityDate" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="activityDate" name="date" required>
+                        <label for="add_activityDate" class="form-label">Date</label> {# Changed ID for uniqueness #}
+                        <input type="date" class="form-control" id="add_activityDate" name="date" required>
                     </div>
                     <div class="mb-3">
-                        <label for="activityDescription" class="form-label">Description</label>
-                        <textarea class="form-control" id="activityDescription" name="description" rows="3"></textarea>
+                        <label for="add_activityDescription" class="form-label">Description</label> {# Changed ID for uniqueness #}
+                        <textarea class="form-control" id="add_activityDescription" name="description" rows="3"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="academicYear" class="form-label">Academic Year</label>
-                        <select class="form-select" id="academicYear" name="academic_year" required>
-                            {% for year in academic_years %}
+                        <label for="add_academicYear" class="form-label">Academic Year</label> {# Changed ID for uniqueness #}
+                        <select class="form-select" id="add_academicYear" name="academic_year" required>
+                            {% for year in academic_years %} 
                                 <option value="{{ year.ID }}">{{ year.YearStart }}-{{ year.YearEnd }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="activityType" class="form-label">Activity Type</label>
-                        <select class="form-select" id="activityType" name="activity_type" required>
-                            {% for type in activity_types %}
+                        <label for="add_activityType" class="form-label">Activity Type</label> {# Changed ID for uniqueness #}
+                        <select class="form-select" id="add_activityType" name="activity_type" required>
+                            {% for type in activity_types %} 
                                 <option value="{{ type.ID }}">{{ type.Name }}</option>
                             {% endfor %}
                         </select>
@@ -110,47 +148,46 @@
     </div>
 </div>
 
-{% for activity, type_name, category, year_start, year_end in activities %}
-<div class="modal fade" id="editActivityModal{{ activity.ID }}" tabindex="-1" aria-labelledby="editActivityModalLabel{{ activity.ID }}" aria-hidden="true">
+{# CORRECTED LOOP for Edit Modals: 'act' is a single Activity object #}
+{% for act in activities %}
+<div class="modal fade" id="editActivityModal{{ act.ID }}" tabindex="-1" aria-labelledby="editActivityModalLabel{{ act.ID }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="editActivityModalLabel{{ activity.ID }}">Edit Activity</h5>
+                <h5 class="modal-title" id="editActivityModalLabel{{ act.ID }}">Edit Activity</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('edit_activity', id=activity.ID) }}" method="POST">
+            <form action="{{ url_for('edit_activity', id=act.ID) }}" method="POST">
                 <div class="modal-body">
-                    <input type="hidden" name="faculty_id" value="{{ current_faculty_id }}">
-
                     <div class="mb-3">
-                        <label for="editActivityName{{ activity.ID }}" class="form-label">Activity Name</label>
-                        <input type="text" class="form-control" id="editActivityName{{ activity.ID }}" name="activity_name" value="{{ activity.Name }}" required>
+                        <label for="editActivityName{{ act.ID }}" class="form-label">Activity Name</label>
+                        <input type="text" class="form-control" id="editActivityName{{ act.ID }}" name="activity_name" value="{{ act.Name }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editActivityTitle{{ activity.ID }}" class="form-label">Title</label>
-                        <input type="text" class="form-control" id="editActivityTitle{{ activity.ID }}" name="title" value="{{ activity.Title }}" required>
+                        <label for="editActivityTitle{{ act.ID }}" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="editActivityTitle{{ act.ID }}" name="title" value="{{ act.Title }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editActivityDate{{ activity.ID }}" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="editActivityDate{{ activity.ID }}" name="date" value="{{ activity.Date | format_date_for_input }}" required>
+                        <label for="editActivityDate{{ act.ID }}" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editActivityDate{{ act.ID }}" name="date" value="{{ act.Date | format_date_for_input if act.Date else '' }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="editActivityDescription{{ activity.ID }}" class="form-label">Description</label>
-                        <textarea class="form-control" id="editActivityDescription{{ activity.ID }}" name="description" rows="3">{{ activity.Description }}</textarea>
+                        <label for="editActivityDescription{{ act.ID }}" class="form-label">Description</label>
+                        <textarea class="form-control" id="editActivityDescription{{ act.ID }}" name="description" rows="3">{{ act.Description or '' }}</textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="editAcademicYear{{ activity.ID }}" class="form-label">Academic Year</label>
-                        <select class="form-select" id="editAcademicYear{{ activity.ID }}" name="academic_year" required>
-                            {% for year in academic_years %}
-                                <option value="{{ year.ID }}" {% if year.ID == activity.AcademicYearID %}selected{% endif %}>{{ year.YearStart }}-{{ year.YearEnd }}</option>
+                        <label for="editAcademicYear{{ act.ID }}" class="form-label">Academic Year</label>
+                        <select class="form-select" id="editAcademicYear{{ act.ID }}" name="academic_year" required>
+                            {% for year in academic_years %} 
+                                <option value="{{ year.ID }}" {% if year.ID == act.AcademicYearID %}selected{% endif %}>{{ year.YearStart }}-{{ year.YearEnd }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="editActivityType{{ activity.ID }}" class="form-label">Activity Type</label>
-                        <select class="form-select" id="editActivityType{{ activity.ID }}" name="activity_type" required>
-                            {% for type in activity_types %}
-                                <option value="{{ type.ID }}" {% if type.ID == activity.ActivityTypeID %}selected{% endif %}>{{ type.Name }}</option>
+                        <label for="editActivityType{{ act.ID }}" class="form-label">Activity Type</label>
+                        <select class="form-select" id="editActivityType{{ act.ID }}" name="activity_type" required>
+                            {% for type_obj in activity_types %} 
+                                <option value="{{ type_obj.ID }}" {% if type_obj.ID == act.ActivityTypeID %}selected{% endif %}>{{ type_obj.Name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -169,14 +206,17 @@
 document.addEventListener('DOMContentLoaded', () => {
     const yearFilter = document.getElementById('filterAcademicYear');
     const typeFilter = document.getElementById('filterActivityType');
-    const activities = document.querySelectorAll('.activity-card');
+    const activityCards = document.querySelectorAll('.activity-card');
+    const activitiesContainer = document.getElementById('activitiesContainer');
+    const filterNoActivitiesMessageDiv = document.getElementById('filterNoActivitiesMessage');
+    const initialNoActivitiesMessageDiv = document.getElementById('initialNoActivitiesMessage');
 
     function filterActivities() {
         const selectedYear = yearFilter.value;
         const selectedType = typeFilter.value;
         let anyVisible = false;
 
-        activities.forEach(card => {
+        activityCards.forEach(card => {
             const cardYear = card.getAttribute('data-year');
             const cardType = card.getAttribute('data-type');
 
@@ -184,33 +224,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const typeMatch = (selectedType === 'all' || cardType === selectedType);
 
             if (yearMatch && typeMatch) {
-                card.style.display = '';
+                card.style.display = ''; // Or 'block'
                 anyVisible = true;
             } else {
                 card.style.display = 'none';
             }
         });
-
-        // Handle "No activities found" message
-        let alertEl = document.getElementById('noActivitiesAlert');
-        if (!anyVisible) {
-            if (!alertEl) {
-                alertEl = document.createElement('div');
-                alertEl.id = 'noActivitiesAlert';
-                alertEl.className = 'col-12';
-                alertEl.innerHTML = `
-                    <div class="alert alert-info rounded-4 shadow-sm" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>No activities found for the selected filters.
-                    </div>`;
-                document.getElementById('activitiesContainer').appendChild(alertEl);
+        
+        if (filterNoActivitiesMessageDiv) {
+            if (!anyVisible && activityCards.length > 0) { 
+                filterNoActivitiesMessageDiv.style.display = '';
+            } else {
+                filterNoActivitiesMessageDiv.style.display = 'none';
             }
-        } else if (alertEl) {
-            alertEl.remove();
         }
+        if(initialNoActivitiesMessageDiv && activityCards.length > 0) { // Hide initial message if cards exist and filter is active
+             initialNoActivitiesMessageDiv.style.display = 'none';
+        } else if (activityCards.length === 0 && initialNoActivitiesMessageDiv) {
+            initialNoActivitiesMessageDiv.style.display = ''; // Ensure it's shown if no cards at all
+        }
+
     }
 
-    yearFilter.addEventListener('change', filterActivities);
-    typeFilter.addEventListener('change', filterActivities);
+    if (yearFilter && activityCards.length > 0) yearFilter.addEventListener('change', filterActivities);
+    if (typeFilter && activityCards.length > 0) typeFilter.addEventListener('change', filterActivities);
 });
 </script>
 
