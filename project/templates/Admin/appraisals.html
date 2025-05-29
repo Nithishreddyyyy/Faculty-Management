@@ -3,7 +3,7 @@
 {% block title %}Appraisal Management - Faculty Management System{% endblock %}
 
 {% block content %}
-{% set active_page = 'appraisals' %} {# This helps base.html set the active nav link #}
+{% set active_page = 'appraisals' %}
 
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -14,7 +14,6 @@
     </div>
 </div>
 
-<!-- Flash Messages (Good to have on every page that might show them) -->
 {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
         {% for category, message in messages %}
@@ -26,8 +25,6 @@
     {% endif %}
 {% endwith %}
 
-
-<!-- Appraisal List -->
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         <div class="table-responsive">
@@ -47,22 +44,11 @@
                         {% for appraisal in appraisal_list %}
                         <tr>
                             <td>
-                                {# appraisal.faculty is now an eager-loaded Faculty object #}
-                                {% if appraisal.faculty %}
-                                    {{ appraisal.faculty.FirstName }} {{ appraisal.faculty.LastName or '' }}
-                                {% else %}
-                                    N/A (Faculty ID: {{ appraisal.FacultyID }})
-                                {% endif %}
+                                {% if appraisal.faculty %}{{ appraisal.faculty.FirstName }} {{ appraisal.faculty.LastName or '' }}{% else %}N/A{% endif %}
                             </td>
                             <td>
-                                {# appraisal.academic_year is now an eager-loaded AcademicYear object #}
-                                {% if appraisal.academic_year %}
-                                    {{ appraisal.academic_year.YearStart }} - {{ appraisal.academic_year.YearEnd }}
-                                {% else %}
-                                    N/A (Year ID: {{ appraisal.AcademicYearID }})
-                                {% endif %}
+                                {% if appraisal.academic_year %}{{ appraisal.academic_year.YearStart }} - {{ appraisal.academic_year.YearEnd }}{% else %}N/A{% endif %}
                             </td>
-                            {# Access model fields directly: Date, Rating, Status #}
                             <td>{{ appraisal.Date.strftime('%d-%m-%Y') if appraisal.Date else 'N/A' }}</td>
                             <td>{{ appraisal.Rating or 'N/A' }}</td>
                             <td><span class="badge 
@@ -75,10 +61,22 @@
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    {# These buttons are placeholders for now. You'll need routes and modals for them. #}
-                                    <button type="button" class="btn btn-outline-primary" title="View Details" disabled><i class="bi bi-eye"></i></button>
-                                    <button type="button" class="btn btn-outline-secondary" title="Edit Appraisal" disabled><i class="bi bi-pencil"></i></button>
-                                    <button type="button" class="btn btn-outline-danger" title="Delete Appraisal" disabled><i class="bi bi-trash"></i></button>
+                                    <button type="button" class="btn btn-outline-primary view-appraisal-btn" title="View Details"
+                                            data-bs-toggle="modal" data-bs-target="#viewAppraisalModal"
+                                            data-appraisal-id="{{ appraisal.ID }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary edit-appraisal-btn" title="Edit Appraisal" 
+                                            data-bs-toggle="modal" data-bs-target="#editAppraisalModal"
+                                            data-appraisal-id="{{ appraisal.ID }}">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger delete-appraisal-btn" title="Delete Appraisal"
+                                            data-bs-toggle="modal" data-bs-target="#deleteAppraisalModal"
+                                            data-appraisal-id="{{ appraisal.ID }}"
+                                            data-faculty-name="{% if appraisal.faculty %}{{ appraisal.faculty.FirstName }} {{ appraisal.faculty.LastName or '' }}{% else %}N/A{% endif %}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -92,14 +90,12 @@
             </table>
         </div>
     </div>
-    <!-- (Optional: Pagination - similar to faculty.html if needed) -->
 </div>
 
 <!-- Add Appraisal Modal -->
 <div class="modal fade" id="addAppraisalModal" tabindex="-1" aria-labelledby="addAppraisalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            {# CORRECTED: Form action now points to the 'appraisals' route #}
             <form method="POST" action="{{ url_for('appraisals') }}"> 
                 <div class="modal-header">
                     <h5 class="modal-title" id="addAppraisalModalLabel">Add New Appraisal</h5>
@@ -111,18 +107,14 @@
                             <label for="appraisal_faculty_id" class="form-label">Faculty</label>
                             <select class="form-select" id="appraisal_faculty_id" name="faculty_id" required>
                                 <option value="" disabled selected>Select Faculty</option>
-                                {% for fac in faculties %} {# 'faculties' is passed from the route #}
-                                <option value="{{ fac.ID }}">{{ fac.FirstName }} {{ fac.LastName or '' }}</option>
-                                {% endfor %}
+                                {% for fac in faculties %}<option value="{{ fac.ID }}">{{ fac.FirstName }} {{ fac.LastName or '' }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label for="appraisal_academic_year_id" class="form-label">Academic Year</label>
                             <select class="form-select" id="appraisal_academic_year_id" name="academic_year_id" required>
                                 <option value="" disabled selected>Select Academic Year</option>
-                                {% for ay in academic_years %} {# 'academic_years' is passed from the route #}
-                                <option value="{{ ay.ID }}">{{ ay.YearStart }} - {{ ay.YearEnd }}</option>
-                                {% endfor %}
+                                {% for ay in academic_years %}<option value="{{ ay.ID }}">{{ ay.YearStart }} - {{ ay.YearEnd }}</option>{% endfor %}
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -133,20 +125,16 @@
                             <label for="overall_rating" class="form-label">Overall Rating</label>
                             <select class="form-select" id="overall_rating" name="overall_rating" required>
                                 <option value="" disabled selected>Select Rating</option>
-                                <option value="Excellent">Excellent</option>
-                                <option value="Very Good">Very Good</option>
-                                <option value="Good">Good</option>
-                                <option value="Satisfactory">Satisfactory</option>
+                                <option value="Excellent">Excellent</option><option value="Very Good">Very Good</option>
+                                <option value="Good">Good</option><option value="Satisfactory">Satisfactory</option>
                                 <option value="Needs Improvement">Needs Improvement</option>
                             </select>
                         </div>
                          <div class="col-md-6">
                             <label for="appraisal_status" class="form-label">Status</label>
                             <select class="form-select" id="appraisal_status" name="status" required>
-                                <option value="Pending" selected>Pending</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                                <option value="Reviewed">Reviewed</option>
+                                <option value="Pending" selected>Pending</option><option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option><option value="Reviewed">Reviewed</option>
                             </select>
                         </div>
                         <div class="col-12">
@@ -163,4 +151,236 @@
         </div>
     </div>
 </div>
+
+<!-- Edit Appraisal Modal -->
+<div class="modal fade" id="editAppraisalModal" tabindex="-1" aria-labelledby="editAppraisalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" id="editAppraisalForm"> {# Action will be set by JS #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAppraisalModalLabel">Edit Appraisal</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {# Fields are identical to Add Modal, but IDs are prefixed with "edit_" for JS targeting #}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_appraisal_faculty_id" class="form-label">Faculty</label>
+                            <select class="form-select" id="edit_appraisal_faculty_id" name="edit_faculty_id" required>
+                                <option value="" disabled>Select Faculty</option>
+                                {% for fac in faculties %}<option value="{{ fac.ID }}">{{ fac.FirstName }} {{ fac.LastName or '' }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_appraisal_academic_year_id" class="form-label">Academic Year</label>
+                            <select class="form-select" id="edit_appraisal_academic_year_id" name="edit_academic_year_id" required>
+                                <option value="" disabled>Select Academic Year</option>
+                                {% for ay in academic_years %}<option value="{{ ay.ID }}">{{ ay.YearStart }} - {{ ay.YearEnd }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_appraisal_date" class="form-label">Appraisal Date</label>
+                            <input type="date" class="form-control" id="edit_appraisal_date" name="edit_appraisal_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_overall_rating" class="form-label">Overall Rating</label>
+                            <select class="form-select" id="edit_overall_rating" name="edit_overall_rating" required>
+                                <option value="" disabled>Select Rating</option>
+                                <option value="Excellent">Excellent</option><option value="Very Good">Very Good</option>
+                                <option value="Good">Good</option><option value="Satisfactory">Satisfactory</option>
+                                <option value="Needs Improvement">Needs Improvement</option>
+                            </select>
+                        </div>
+                         <div class="col-md-6">
+                            <label for="edit_appraisal_status" class="form-label">Status</label>
+                            <select class="form-select" id="edit_appraisal_status" name="edit_status" required>
+                                <option value="Pending">Pending</option><option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option><option value="Reviewed">Reviewed</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_appraisal_comments" class="form-label">Comments/Remarks</label>
+                            <textarea class="form-control" id="edit_appraisal_comments" name="edit_comments" rows="4"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Appraisal Modal -->
+<div class="modal fade" id="viewAppraisalModal" tabindex="-1" aria-labelledby="viewAppraisalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewAppraisalModalLabel">Appraisal Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="viewAppraisalContent">
+                    <p><strong>Faculty:</strong> <span id="view_faculty_name"></span></p>
+                    <p><strong>Department:</strong> <span id="view_department"></span></p>
+                    <p><strong>Designation:</strong> <span id="view_designation"></span></p>
+                    <hr>
+                    <p><strong>Academic Year:</strong> <span id="view_academic_year_str"></span></p>
+                    <p><strong>Appraisal Date:</strong> <span id="view_date_formatted"></span></p>
+                    <p><strong>Overall Rating:</strong> <span id="view_rating" class="fw-bold"></span></p>
+                    <p><strong>Status:</strong> <span id="view_status_badge" class="badge"></span></p>
+                    <hr>
+                    <h6><strong>Comments/Remarks:</strong></h6>
+                    <p id="view_comments" style="white-space: pre-wrap;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                 <button type="button" class="btn btn-primary edit-appraisal-btn-from-view" title="Edit This Appraisal"
+                        data-bs-toggle="modal" data-bs-target="#editAppraisalModal"
+                        data-appraisal-id=""> {# appraisal-id will be set by JS #}
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteAppraisalModal" tabindex="-1" aria-labelledby="deleteAppraisalModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="deleteAppraisalForm"> {# Action will be set by JS #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteAppraisalModalLabel">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete the appraisal for <strong id="deleteFacultyName"></strong>?</p>
+                    <p>This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete Appraisal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Function to set status badge class
+    function setStatusBadgeClass(element, status) {
+        element.className = 'badge'; // Reset classes
+        if (status === 'Completed') element.classList.add('bg-success');
+        else if (status === 'Pending') element.classList.add('bg-warning', 'text-dark');
+        else if (status === 'In Progress') element.classList.add('bg-info', 'text-dark');
+        else if (status === 'Reviewed') element.classList.add('bg-primary');
+        else element.classList.add('bg-secondary');
+        element.textContent = status || 'N/A';
+    }
+
+    // View Appraisal Modal
+    const viewAppraisalModal = document.getElementById('viewAppraisalModal');
+    if (viewAppraisalModal) {
+        viewAppraisalModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const appraisalId = button.getAttribute('data-appraisal-id');
+            
+            // Update the "Edit" button inside the View modal
+            const editButtonInViewModal = viewAppraisalModal.querySelector('.edit-appraisal-btn-from-view');
+            if(editButtonInViewModal) {
+                editButtonInViewModal.setAttribute('data-appraisal-id', appraisalId);
+            }
+
+            fetch(`/appraisal/get_data/${appraisalId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error fetching appraisal data:', data.error);
+                        document.getElementById('viewAppraisalContent').innerHTML = '<p class="text-danger">Could not load appraisal details.</p>';
+                        return;
+                    }
+                    document.getElementById('view_faculty_name').textContent = data.faculty_name || 'N/A';
+                    document.getElementById('view_department').textContent = data.department || 'N/A';
+                    document.getElementById('view_designation').textContent = data.designation || 'N/A';
+                    document.getElementById('view_academic_year_str').textContent = data.academic_year_str || 'N/A';
+                    document.getElementById('view_date_formatted').textContent = data.date_formatted || 'N/A';
+                    document.getElementById('view_rating').textContent = data.rating || 'N/A';
+                    setStatusBadgeClass(document.getElementById('view_status_badge'), data.status);
+                    document.getElementById('view_comments').textContent = data.comments || 'No comments provided.';
+                })
+                .catch(error => {
+                    console.error('Error fetching appraisal data for view:', error);
+                    document.getElementById('viewAppraisalContent').innerHTML = '<p class="text-danger">Error loading details. Please try again.</p>';
+                });
+        });
+    }
+
+    // Edit Appraisal Modal (Handles both main edit button and edit button from view modal)
+    document.querySelectorAll('.edit-appraisal-btn, .edit-appraisal-btn-from-view').forEach(button => {
+        button.addEventListener('click', function(event) {
+            // If this button is inside the view modal, first hide the view modal
+            const currentViewModal = bootstrap.Modal.getInstance(document.getElementById('viewAppraisalModal'));
+            if (currentViewModal && this.classList.contains('edit-appraisal-btn-from-view')) {
+                 // Check if the modal instance exists and is shown
+                if (currentViewModal._isShown) {
+                    currentViewModal.hide();
+                }
+            }
+
+            const appraisalId = this.getAttribute('data-appraisal-id');
+            const editModalElement = document.getElementById('editAppraisalModal'); // Target edit modal
+            
+            const editForm = editModalElement.querySelector('#editAppraisalForm');
+            editForm.action = `/appraisal/edit/${appraisalId}`;
+
+            fetch(`/appraisal/get_data/${appraisalId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Could not load appraisal data for editing.'); return;
+                    }
+                    editModalElement.querySelector('#edit_appraisal_faculty_id').value = data.faculty_id;
+                    editModalElement.querySelector('#edit_appraisal_academic_year_id').value = data.academic_year_id;
+                    editModalElement.querySelector('#edit_appraisal_date').value = data.date; // YYYY-MM-DD format
+                    editModalElement.querySelector('#edit_overall_rating').value = data.rating;
+                    editModalElement.querySelector('#edit_appraisal_status').value = data.status;
+                    editModalElement.querySelector('#edit_appraisal_comments').value = data.comments || '';
+                    
+                    // Ensure the modal is shown (Bootstrap 5)
+                    var editModal = bootstrap.Modal.getOrCreateInstance(editModalElement);
+                    editModal.show();
+                })
+                .catch(error => {
+                    console.error('Error fetching appraisal data for edit:', error);
+                    alert('Error loading appraisal data: ' + error.message);
+                });
+        });
+    });
+
+
+    // Delete Appraisal Modal
+    const deleteAppraisalModal = document.getElementById('deleteAppraisalModal');
+    if (deleteAppraisalModal) {
+        deleteAppraisalModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const appraisalId = button.getAttribute('data-appraisal-id');
+            const facultyName = button.getAttribute('data-faculty-name');
+
+            const deleteForm = document.getElementById('deleteAppraisalForm');
+            deleteForm.action = `/appraisal/delete/${appraisalId}`; 
+
+            const facultyNameSpan = document.getElementById('deleteFacultyName');
+            facultyNameSpan.textContent = facultyName || 'this appraisal';
+        });
+    }
+});
+</script>
 {% endblock %}
