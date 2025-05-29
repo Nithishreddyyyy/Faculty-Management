@@ -14,7 +14,18 @@
     </div>
 </div>
 
-<!-- (Optional: Filters and Search - You can add similar filter/search UI as in faculty.html if needed) -->
+<!-- Flash Messages (Good to have on every page that might show them) -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
 
 <!-- Appraisal List -->
 <div class="card shadow-sm border-0">
@@ -36,36 +47,38 @@
                         {% for appraisal in appraisal_list %}
                         <tr>
                             <td>
-                                {# Assuming appraisal object has a faculty attribute with FirstName and LastName #}
+                                {# appraisal.faculty is now an eager-loaded Faculty object #}
                                 {% if appraisal.faculty %}
                                     {{ appraisal.faculty.FirstName }} {{ appraisal.faculty.LastName or '' }}
                                 {% else %}
-                                    N/A
+                                    N/A (Faculty ID: {{ appraisal.FacultyID }})
                                 {% endif %}
                             </td>
                             <td>
-                                {# Assuming appraisal object has an academic_year attribute with YearStart and YearEnd #}
+                                {# appraisal.academic_year is now an eager-loaded AcademicYear object #}
                                 {% if appraisal.academic_year %}
                                     {{ appraisal.academic_year.YearStart }} - {{ appraisal.academic_year.YearEnd }}
                                 {% else %}
-                                    N/A
+                                    N/A (Year ID: {{ appraisal.AcademicYearID }})
                                 {% endif %}
                             </td>
-                            <td>{{ appraisal.date.strftime('%d-%m-%Y') if appraisal.date else 'N/A' }}</td>
-                            <td>{{ appraisal.rating or 'N/A' }}</td>
+                            {# Access model fields directly: Date, Rating, Status #}
+                            <td>{{ appraisal.Date.strftime('%d-%m-%Y') if appraisal.Date else 'N/A' }}</td>
+                            <td>{{ appraisal.Rating or 'N/A' }}</td>
                             <td><span class="badge 
-                                {%- if appraisal.status == 'Completed' %} bg-success
-                                {%- elif appraisal.status == 'Pending' %} bg-warning text-dark
-                                {%- elif appraisal.status == 'In Progress' %} bg-info text-dark
-                                {%- elif appraisal.status == 'Reviewed' %} bg-primary
+                                {%- if appraisal.Status == 'Completed' %} bg-success
+                                {%- elif appraisal.Status == 'Pending' %} bg-warning text-dark
+                                {%- elif appraisal.Status == 'In Progress' %} bg-info text-dark
+                                {%- elif appraisal.Status == 'Reviewed' %} bg-primary
                                 {%- else %} bg-secondary
-                                {%- endif %}">{{ appraisal.status or 'N/A' }}</span>
+                                {%- endif %}">{{ appraisal.Status or 'N/A' }}</span>
                             </td>
                             <td>
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-outline-primary" title="View Details"><i class="bi bi-eye"></i></button>
-                                    <button type="button" class="btn btn-outline-secondary" title="Edit Appraisal"><i class="bi bi-pencil"></i></button>
-                                    <button type="button" class="btn btn-outline-danger" title="Delete Appraisal"><i class="bi bi-trash"></i></button>
+                                    {# These buttons are placeholders for now. You'll need routes and modals for them. #}
+                                    <button type="button" class="btn btn-outline-primary" title="View Details" disabled><i class="bi bi-eye"></i></button>
+                                    <button type="button" class="btn btn-outline-secondary" title="Edit Appraisal" disabled><i class="bi bi-pencil"></i></button>
+                                    <button type="button" class="btn btn-outline-danger" title="Delete Appraisal" disabled><i class="bi bi-trash"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -86,9 +99,8 @@
 <div class="modal fade" id="addAppraisalModal" tabindex="-1" aria-labelledby="addAppraisalModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            {# The form action is '#' as the add_appraisal route is not defined in this request. 
-               You would change this to action="{{ url_for('add_appraisal') }}" once that route exists. #}
-            <form method="POST" action="#"> 
+            {# CORRECTED: Form action now points to the 'appraisals' route #}
+            <form method="POST" action="{{ url_for('appraisals') }}"> 
                 <div class="modal-header">
                     <h5 class="modal-title" id="addAppraisalModalLabel">Add New Appraisal</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -99,7 +111,7 @@
                             <label for="appraisal_faculty_id" class="form-label">Faculty</label>
                             <select class="form-select" id="appraisal_faculty_id" name="faculty_id" required>
                                 <option value="" disabled selected>Select Faculty</option>
-                                {% for fac in faculties %}
+                                {% for fac in faculties %} {# 'faculties' is passed from the route #}
                                 <option value="{{ fac.ID }}">{{ fac.FirstName }} {{ fac.LastName or '' }}</option>
                                 {% endfor %}
                             </select>
@@ -108,7 +120,7 @@
                             <label for="appraisal_academic_year_id" class="form-label">Academic Year</label>
                             <select class="form-select" id="appraisal_academic_year_id" name="academic_year_id" required>
                                 <option value="" disabled selected>Select Academic Year</option>
-                                {% for ay in academic_years %}
+                                {% for ay in academic_years %} {# 'academic_years' is passed from the route #}
                                 <option value="{{ ay.ID }}">{{ ay.YearStart }} - {{ ay.YearEnd }}</option>
                                 {% endfor %}
                             </select>
