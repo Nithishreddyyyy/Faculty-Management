@@ -423,10 +423,15 @@ def facultydashboard():
     activity_type_counts = db.session.query(ActivityType.Name, db.func.count(Activity.ID).label('count'))\
         .join(Activity, Activity.ActivityTypeID == ActivityType.ID).filter(Activity.FacultyID == faculty.ID).group_by(ActivityType.Name).all()
     total_activities = sum(item.count for item in activity_type_counts)
+    academic_years = db.session.query(AcademicYear).order_by(AcademicYear.YearStart.desc()).all()
+    activity_types = db.session.query(ActivityType).order_by(ActivityType.Name).all()
+
     activity_distribution = [{'name': name, 'count': count, 'percentage': round((total_activities and (count / total_activities) * 100) or 0, 1), 'color': color_map.get(name, 'bg-secondary')} for name, count in activity_type_counts]
     return render_template('Faculty/dashboard.html',
         faculty=faculty, subject_count=subject_count, activities_count=len(activities_list),
-        activity_distribution=activity_distribution, activities=activities_list, current_faculty_id=faculty.ID
+        activity_distribution=activity_distribution, activities=activities_list, current_faculty_id=faculty.ID,
+                           academic_years=academic_years,
+                           activity_types=activity_types
     )
 
 @app.route('/profile', methods=['GET', 'POST'])
