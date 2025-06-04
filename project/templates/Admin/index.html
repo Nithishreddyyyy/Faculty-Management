@@ -93,17 +93,17 @@
                 <tbody>
                     {% for activity in recent_activities %}
                     <tr data-activity-id="{{ activity.ID }}"
-                        data-activity-name="{{ activity.Name }}" {# Now correctly populated from app.py #}
+                        data-activity-name="{{ activity.Name }}"
                         data-activity-title="{{ activity.Title }}"
                         data-activity-date="{{ activity.Date | format_date_for_input }}"
-                        data-activity-description="{{ activity.Description }}" {# Now correctly populated #}
-                        data-activity-type-id="{{ activity.ActivityTypeID }}" {# Now correctly populated #}
-                        data-faculty-id="{{ activity.FacultyID }}" {# Now correctly populated #}
-                        data-academic-year-id="{{ activity.AcademicYearID }}" {# Now correctly populated #}
+                        data-activity-description="{{ activity.Description }}"
+                        data-activity-type-id="{{ activity.ActivityTypeID }}"
+                        data-faculty-id="{{ activity.FacultyID }}"
+                        data-academic-year-id="{{ activity.AcademicYearID }}"
                         data-faculty-name="{{ activity.faculty_name }}"
                         data-activity-type="{{ activity.activity_type }}"
-                        data-academic-year="{{ activity.academic_year }}"> {# Now correctly populated #}
-                        <td>{{ activity.Title }}</td> {# Displaying Title in the table column #}
+                        data-academic-year="{{ activity.academic_year }}">
+                        <td>{{ activity.Title }}</td>
                         <td>{{ activity.faculty_name }}</td>
                         <td><span class="badge bg-info">{{ activity.activity_type }}</span></td>
                         <td>{{ activity.Date.strftime('%d-%m-%Y') }}</td>
@@ -145,7 +145,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for faculty_member in faculty_list %} {# Renamed to avoid conflict with faculty route name #}
+                    {# Loop through 'faculties' which is passed from the admin_dashboard route #}
+                    {% for faculty_member in faculties %}
                     <tr data-faculty-id="{{ faculty_member.ID }}"
                         data-first-name="{{ faculty_member.FirstName }}"
                         data-last-name="{{ faculty_member.LastName }}"
@@ -194,9 +195,7 @@
             </div>
             <div class="modal-body">
                 <table class="table table-bordered">
-                    {# Corrected to display activity Name #}
                     <tr><th style="width: 30%;">Activity Name</th><td id="view_activity_name_title"></td></tr>
-                    {# Corrected to display activity Title #}
                     <tr><th>Activity Title</th><td id="view_activity_title"></td></tr>
                     <tr><th>Date</th><td id="view_activity_date"></td></tr>
                     <tr><th>Type</th><td id="view_activity_type"></td></tr>
@@ -305,7 +304,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Secondary Phone</label>
-                            <input type="tel" class="form-control" name="secondary_phone">
+                            <input type="tel" class="form-control" name="phone1"> {# Changed from secondary_phone to phone1 to match model #}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Department</label>
@@ -401,7 +400,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Secondary Phone</label>
-                            <input type="tel" class="form-control" id="edit_faculty_phone1" name="secondary_phone">
+                            <input type="tel" class="form-control" id="edit_faculty_phone1" name="phone1"> {# Changed to phone1 #}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Department</label>

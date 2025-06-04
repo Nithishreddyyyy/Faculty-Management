@@ -173,6 +173,10 @@ def index():
     faculty_count = Faculty.query.count()
     activity_count = Activity.query.count()
     subject_count = Subject.query.count()
+    
+    # Fetch all faculties for the list
+    all_faculties = Faculty.query.order_by(Faculty.FirstName).all()
+
     recent_activities_raw = db.session.query(
         Activity.ID.label('ID'), Activity.Name.label('Name'), Activity.Title.label('Title'),
         Activity.Date.label('Date'), Activity.Description.label('Description'),
@@ -193,7 +197,7 @@ def index():
     return render_template('Admin/index.html',
         faculty_count=faculty_count, activity_count=activity_count, subject_count=subject_count,
         current_year=datetime.now().year, recent_activities=formatted_recent_activities,
-        faculties=Faculty.query.all(), academic_years=AcademicYear.query.all(), activity_types=ActivityType.query.all()
+        faculties=all_faculties, academic_years=AcademicYear.query.all(), activity_types=ActivityType.query.all()
     )
 
 @app.route('/faculty')
