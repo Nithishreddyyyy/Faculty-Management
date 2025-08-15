@@ -82,6 +82,7 @@ A web application for streamlined faculty record management and analytics. This 
 
 ---
 Author: Nithish Reddy, Anvesh B V
+
 Let’s make faculty management smarter and more efficient!
 
 
