@@ -74,8 +74,6 @@ A web application for streamlined faculty record management and analytics. This 
    * Use the provided schema diagrams to design the database.
    * Run migrations or import SQL schema if available.
 
-     ```bash
-     ```
 ## Usage
 
 * **Admin**: Log in to manage faculty, subjects, appraisals, view analytics.
