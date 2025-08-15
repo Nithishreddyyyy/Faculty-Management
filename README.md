@@ -1,7 +1,3 @@
-Here’s a polished **README** draft for your **Faculty-Management** project, based on the structure and files I observed in your repository: ([GitHub][1]). Feel free to adjust any part to better reflect your vision, tech stack, or usage workflow.
-
----
-
 # Faculty-Management
 
 A web application for streamlined faculty record management and analytics. This system provides full CRUD operations, performance tracking, and personalized dashboards for faculty members.
